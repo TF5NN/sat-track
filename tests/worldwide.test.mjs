@@ -1,0 +1,47 @@
+import {strict as assert} from 'node:assert';
+import {readFileSync} from 'node:fs';
+import {catalog} from '../src/lib/catalog.ts';
+import {parseTLE,predict,defaultStation,noradNumber} from '../src/lib/orbit.ts';
+import {reachableCatalog,localizePasses} from '../src/lib/visibility.ts';
+import {parseSatnogs,mergeElements,elementText} from '../src/lib/elements.ts';
+import {createPassCalendar} from '../src/lib/calendar.ts';
+const now=Date.parse('2026-11-10T14:00:00Z');
+const elements=parseTLE(readFileSync('tests/fixtures/orbits-2026-11-10.txt','utf8'));
+const stations={Reykjavik:defaultStation,London:{lat:51.51,lon:-.13,height:30},Jakarta:{lat:-6.2,lon:106.85,height:10},Sydney:{lat:-33.87,lon:151.21,height:20},Arctic:{lat:85,lon:20,height:0},Antarctic:{lat:-85,lon:0,height:0}};
+const summary={};
+for(const [name,station] of Object.entries(stations)){
+ const result=predict(elements,catalog,station,now,72);
+ const passes=localizePasses(result.passes,station,72);
+ const available=reachableCatalog(catalog,passes,now,5);
+ const ids=available.map(s=>s.id);
+ summary[name]={services:available.length,io86:ids.includes('io86-fm'),iss:ids.includes('iss-fm')};
+ assert(!ids.includes('jamx-sstv'),'missing elements never become choices');
+ assert(!ids.includes('iss-aprs'),'known blackout removed from every service list');
+ assert(available.every(s=>passes.some(p=>p.sat.id===s.id&&p.peak.el>=5&&p.windows.some(([a,b])=>b>Math.max(now,a)))));
+ assert.equal(reachableCatalog(catalog,passes,now,90).length,0,'no impossible high-elevation choices');
+ assert.equal(reachableCatalog(catalog,passes,now+4*86400000,0).length,0,'expired passes disappear');
+ const localizedISS=passes.find(p=>p.sat.id==='iss-fm');
+ if(name==='Reykjavik')assert(localizedISS.sat.notes.includes('clear southern horizon'));
+ if(name==='London'||name==='Jakarta')assert(!localizedISS.sat.notes.includes('From this station'));
+ const stale=predict(elements,catalog,station,now+10*86400000,24);
+ assert.equal(reachableCatalog(catalog,stale.passes,now+10*86400000,0).length,0);
+ if(name==='Reykjavik'){
+  const p=localizedISS;
+  const event=createPassCalendar({key:p.key,sat:p.sat,start:p.aos.time,end:p.los.time,peakElevation:p.peak.el,riseDirection:'S',setDirection:'SE'}).replace(/\r\n /g,'');
+  assert(event.includes('67.0 Hz')&&event.includes(p.sat.source)&&event.includes('clear southern horizon'),'calendar inherits tone, source and conditional notes');
+ }
+}
+assert(summary.Jakarta.io86,'equatorial FM satellite is offered where reachable');
+for(const name of ['Reykjavik','London','Sydney','Arctic','Antarctic'])assert(!summary[name].io86,`IO-86 hidden in ${name}`);
+assert(!summary.Arctic.iss&&!summary.Antarctic.iss,'ISS hidden beyond footprint');
+assert.equal(catalog.find(s=>s.id==='no44').up,null,'NO-44 recovery restriction respected');
+const io=elements.find(e=>e.norad===40931);assert(now-io.epoch<7*86400000,'fresh supplementary IO-86 elements replace stale AMSAT set');
+const followed=elements.find(e=>e.norad===67284);
+const parsed=parseSatnogs([{tle0:followed.name,tle1:followed.line1,tle2:followed.line2,norad_cat_id:98429}]);
+assert.equal(parsed[0].norad,67284,'followed IDs come from validated TLE columns');
+assert.deepEqual(parseSatnogs([{tle1:'invalid',tle2:'invalid'}]),[]);
+assert.equal(mergeElements([[io],[{...io,epoch:io.epoch-86400000}]],now)[0].epoch,io.epoch);
+assert.equal(mergeElements([[io],[{...io,epoch:now+2*86400000}]],now)[0].epoch,io.epoch,'future set cannot replace usable elements');
+assert.equal(parseTLE(elementText(elements)).length,elements.length);
+assert.equal(noradNumber('A0470'),100470);assert.equal(noradNumber('J0000'),180000);assert(Number.isNaN(noradNumber('I0000')));
+console.log(JSON.stringify({result:'PASS',stations:summary,checks:['shared reachable service set','equatorial footprint','polar footprint','minimum elevation','expired windows','known blackout','stale/missing elements','conditional notes and calendar','supplementary epoch selection','followed IDs','Alpha-5 IDs']},null,2));
