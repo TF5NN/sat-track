@@ -119,6 +119,9 @@ export function predict(elements:Element[],sats:Satellite[],station:Station,star
   return {passes:passes.sort((a,b)=>a.aos.time-b.aos.time||a.sat.name.localeCompare(b.sat.name)),unavailable};
 }
 export type Filters={status:string;satellite:string;uplink:string;downlink:string;mode:string;elevation:number};
+// Defaults: every service this station can work (FM voice and APRS), any pass from 5°.
+// Receive-only services stay one tap away under All / Listen.
+export const defaultFilters:Filters={status:'work',satellite:'all',uplink:'all',downlink:'all',mode:'all',elevation:5};
 export function filterPasses(passes:Pass[],f:Filters,now:number){
   return passes.filter(p=>p.los.time>now&&(f.status==='all'||p.access===f.status)&&(f.satellite==='all'||p.sat.id===f.satellite)&&(f.uplink==='all'||(p.sat.up===null?'none':p.sat.up<200?'2m':'70cm')===f.uplink)&&(f.downlink==='all'||(p.sat.down<200?'2m':'70cm')===f.downlink)&&(f.mode==='all'||p.sat.mode===f.mode)&&p.peak.el>=f.elevation);
 }

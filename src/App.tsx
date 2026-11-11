@@ -1,423 +1,43 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
-  ArrowUpRight,
-  ChevronRight,
   Clock3,
-  Download,
-  Headphones,
   Info,
   MapPin,
   Radio,
   RefreshCw,
   Satellite as SatelliteIcon,
   Settings2,
-  SlidersHorizontal,
-  Sun,
-  X,
+  ArrowUpRight,
 } from 'lucide-react';
-import { twoline2satrec } from 'satellite.js';
+import FiltersPanel from './components/filters';
+import Guide from './components/guide';
+import OrbitDialog from './components/orbit-dialog';
+import PassDetail from './components/pass-detail';
+import PassList from './components/pass-list';
+import SourcesDialog from './components/sources-dialog';
 import StationDialog from './components/station-dialog';
-import OrbitDialog, { htManual } from './components/orbit-dialog';
-import { createPassCalendar } from './lib/calendar';
-import { parseBundle } from './lib/orbital-data';
-import bundledData from '../public/data/orbits.json';
-import { reachableCatalog, localizePasses } from './lib/visibility';
-import { activityFor, activityText, parseActivity, type Activity as Reports } from './lib/activity';
-import { catalog, band, frequency, reviewed, sources, uncertain } from './lib/catalog';
+import { builtAt, useOrbitData } from './hooks/use-orbit-data';
+import { catalog, band, reviewed, uncertain } from './lib/catalog';
 import {
-  compass,
+  defaultFilters as defaults,
   defaultStation,
-  doppler,
   filterPasses,
-  tuningSteps,
   grid,
-  pointAt,
   predict,
-  type Element,
   type Filters,
-  type Pass,
   type Station,
 } from './lib/orbit';
-// The bundled copy shipped with this build, so it is trusted whatever the device clock says.
-// (A clock set behind the data timestamp used to stop the whole page from loading.)
-const initialData = parseBundle(bundledData, Infinity);
-const builtAt = Date.parse(initialData.bundle.fetchedAt);
-// Defaults: every service this station can work (FM voice and APRS), any pass from 5°.
-// Receive-only services stay one tap away under All / Listen.
-const defaults: Filters = {
-  status: 'work',
-  satellite: 'all',
-  uplink: 'all',
-  downlink: 'all',
-  mode: 'all',
-  elevation: 5,
-};
-// Pass times follow the visitor's choice: device-local (zone undefined) or UTC. The app sets
-// `zone` before each render. Data timestamps (orbit epochs, event schedules) always use utc*.
-let zone: 'UTC' | undefined;
-const clockTime = (t: number, seconds: boolean, timeZone: string | undefined) =>
-  new Date(t).toLocaleTimeString('en-GB', {
-    timeZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    ...(seconds ? { second: '2-digit' } : {}),
-  });
-const time = (t: number, seconds = false) => clockTime(t, seconds, zone);
-const utcTime = (t: number, seconds = false) => clockTime(t, seconds, 'UTC');
-const date = (t: number) =>
-  new Date(t).toLocaleDateString('en-GB', { timeZone: zone, day: 'numeric', month: 'short' });
-const utcDate = (t: number) =>
-  new Date(t).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' });
-const zoneName = () => (zone ? 'UTC' : 'local');
-const offsetLabel = (t: number) => {
-  const m = -new Date(t).getTimezoneOffset(),
-    a = Math.abs(m);
-  return `UTC${m < 0 ? '−' : '+'}${Math.floor(a / 60)}${a % 60 ? ':' + String(a % 60).padStart(2, '0') : ''}`;
-};
-const dateYear = (t: number) =>
-  new Date(t).toLocaleDateString('en-GB', {
-    timeZone: 'UTC',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-const span = (w: { start: string; end: string }) =>
-  `${utcDate(Date.parse(w.start))} ${utcTime(Date.parse(w.start))}–${utcDate(Date.parse(w.end))} ${utcTime(Date.parse(w.end))} UTC`;
-const until = (t: number, now: number) =>
-  t <= now
-    ? 'In progress'
-    : t - now < 3600000
-      ? `In ${Math.ceil((t - now) / 60000)} min`
-      : `In ${Math.floor((t - now) / 3600000)}h ${Math.floor(((t - now) % 3600000) / 60000)}m`;
-function Badge({ access, small = false }: { access: 'work' | 'listen'; small?: boolean }) {
-  return (
-    <span className={`badge ${access} ${small ? 'small' : ''}`}>
-      {access === 'work' ? <Radio size={11} /> : <Headphones size={11} />}{' '}
-      {access === 'work' ? 'Workable' : 'Receive only'}
-    </span>
-  );
-}
-function SkyPlot({ pass, live }: { pass: Pass; live?: { az: number; el: number } | null }) {
-  const xy = (p: { az: number; el: number }) => {
-    const r = ((90 - Math.max(0, p.el)) / 90) * 94,
-      a = (p.az * Math.PI) / 180;
-    return [120 + Math.sin(a) * r, 120 - Math.cos(a) * r];
-  };
-  const a = xy(pass.aos),
-    b = xy(pass.los),
-    peak = xy(pass.peak),
-    path = pass.track.map((p, i) => `${i ? 'L' : 'M'}${xy(p).join(',')}`).join(' '),
-    current = live && live.el >= 0 ? xy(live) : null;
-  return (
-    <svg
-      className="skyplot"
-      viewBox="0 0 240 240"
-      role="img"
-      aria-label={`Sky path from ${compass(pass.aos.az)} through ${pass.peak.el.toFixed(0)} degrees elevation to ${compass(pass.los.az)}. North at top, east at right.`}
-    >
-      <circle cx="120" cy="120" r="94" fill="#f4f7f2" stroke="#cfdad4" />
-      {[31.33, 62.67].map((r) => (
-        <circle key={r} cx="120" cy="120" r={r} fill="none" stroke="#d6dfd8" strokeDasharray="3 4" />
-      ))}
-      <path d="M26 120H214M120 26V214" stroke="#d6dfd8" />
-      <text x="120" y="14" textAnchor="middle" className="sky-cardinal">
-        N
-      </text>
-      <text x="228" y="124" textAnchor="middle" className="sky-cardinal">
-        E
-      </text>
-      <text x="120" y="234" textAnchor="middle" className="sky-cardinal">
-        S
-      </text>
-      <text x="12" y="124" textAnchor="middle" className="sky-cardinal">
-        W
-      </text>
-      <text x="124" y="61" className="sky-degree">
-        30°
-      </text>
-      <text x="124" y="93" className="sky-degree">
-        60°
-      </text>
-      <path d={path} fill="none" stroke="#21806a" strokeWidth="2.5" />
-      <circle cx={a[0]} cy={a[1]} r="4" fill="#21806a" />
-      <circle cx={b[0]} cy={b[1]} r="4" fill="#f8faf5" stroke="#21806a" strokeWidth="1.8" />
-      <circle cx={peak[0]} cy={peak[1]} r="3" fill="#21806a" />
-      {current && (
-        <>
-          <circle cx={current[0]} cy={current[1]} r="8" fill="#21806a" opacity=".2" />
-          <circle cx={current[0]} cy={current[1]} r="4" fill="#142f32" />
-        </>
-      )}
-    </svg>
-  );
-}
-function Arc({ pass }: { pass: Pass }) {
-  const d = pass.track.map((p, i) => `${i ? 'L' : 'M'}${(i / 60) * 74},${36 - (p.el / 90) * 32}`).join(' ');
-  return (
-    <svg viewBox="0 0 74 42" className="mini-arc" aria-hidden="true">
-      <path d="M0 36H74" stroke="#d7dfd8" />
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  );
-}
-function ics(pass: Pass, station: Station) {
-  const tuning = tuningSteps(
-    twoline2satrec(pass.element.line1, pass.element.line2),
-    station,
-    pass.sat.up,
-    pass.sat.down,
-    pass.aos.time,
-    pass.los.time,
-  ).map(
-    (s) =>
-      `${utcTime(s.time, true)} UTC  RX ${s.rx.toFixed(3)}${s.tx === null ? '' : `  TX ${s.tx.toFixed(3)}`}`,
-  );
-  const content = createPassCalendar({
-    key: pass.key,
-    sat: pass.sat,
-    start: pass.aos.time,
-    end: pass.los.time,
-    peakElevation: pass.peak.el,
-    riseDirection: compass(pass.aos.az),
-    setDirection: compass(pass.los.az),
-    tuning,
-  });
-  const url = URL.createObjectURL(new Blob([content], { type: 'text/calendar' })),
-    a = document.createElement('a');
-  a.href = url;
-  a.download = `${pass.sat.id}-pass.ics`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-function Detail({
-  pass,
-  station,
-  now,
-  activity,
-  onClose,
-  onOrbit,
-}: {
-  pass: Pass;
-  station: Station;
-  now: number;
-  activity: Reports | null;
-  onClose: () => void;
-  onOrbit: () => void;
-}) {
-  const heard = activityFor(pass.sat, activity, now);
-  const [t, setT] = useState(0);
-  useEffect(() => setT(0), [pass.key]);
-  const rec = useMemo(() => twoline2satrec(pass.element.line1, pass.element.line2), [pass.element]);
-  const inPass = now >= pass.aos.time && now < pass.los.time;
-  const sample = pass.aos.time + ((pass.los.time - pass.aos.time) * t) / 100;
-  const live = pointAt(rec, inPass ? now : sample, station);
-  const d = doppler(rec, inPass ? now : sample, station, pass.sat.up, pass.sat.down);
-  const points = [pass.aos, pass.peak, pass.los];
-  const steps = useMemo(
-    () => tuningSteps(rec, station, pass.sat.up, pass.sat.down, pass.aos.time, pass.los.time),
-    [rec, station, pass.sat.up, pass.sat.down, pass.aos.time, pass.los.time],
-  );
-  const at = inPass ? now : sample,
-    current = steps.reduce((c, s) => (s.time <= at ? s : c), steps[0]);
-  return (
-    <aside className="detail" aria-label="Selected pass details">
-      <div className="detail-top">
-        <span className="eyebrow">PASS BRIEFING</span>
-        <button className="icon-button mobile-close" onClick={onClose} aria-label="Close pass details">
-          <X size={18} />
-        </button>
-      </div>
-      <div className="detail-title">
-        <div>
-          <h2>{pass.sat.name}</h2>
-          <p>{pass.sat.subtitle}</p>
-        </div>
-        <Badge access={pass.access} />
-      </div>
-      <div className="plot-wrap">
-        <SkyPlot pass={pass} live={live} />
-        <span className="plot-caption">
-          {compass(pass.aos.az)} <ArrowRight size={12} /> {compass(pass.los.az)} <span>·</span>{' '}
-          {pass.peak.el.toFixed(0)}° peak
-        </span>
-      </div>
-      <div className="timing">
-        {points.map((p, i) => (
-          <div key={i}>
-            <span>{['AOS · RISE', 'MAX · TCA', 'LOS · SET'][i]}</span>
-            <strong>{time(p.time, true)}</strong>
-            <small>
-              {Math.round(p.az)}° {compass(p.az)}
-              {i === 1 ? ` · ${pass.peak.el.toFixed(1)}° el` : ''}
-            </small>
-          </div>
-        ))}
-      </div>
-      {!zone && (
-        <p className="fine utc-beside">
-          Local time ({offsetLabel(pass.aos.time)}). In UTC: {utcTime(pass.aos.time, true)}–
-          {utcTime(pass.los.time, true)}.
-        </p>
-      )}
-      <div className="detail-section">
-        <div className="section-label">
-          RADIO SETUP <span>{pass.sat.mode}</span>
-        </div>
-        <div className="frequency-row">
-          <div>
-            <span>
-              <ArrowDown size={12} /> Downlink · RX · {band(pass.sat.down)}
-            </span>
-            <strong>
-              {frequency(pass.sat.down)} <small>MHz</small>
-            </strong>
-          </div>
-          <div>
-            <span>
-              <ArrowUp size={12} /> Uplink · TX · {band(pass.sat.up) === 'none' ? '—' : band(pass.sat.up)}
-            </span>
-            <strong>
-              {frequency(pass.sat.up)} {pass.sat.up && <small>MHz</small>}
-            </strong>
-          </div>
-        </div>
-        <p className="tone">
-          TX tone <strong>{pass.sat.tone}</strong> <span>· RX tone off</span>
-        </p>
-      </div>
-      <div className="detail-section">
-        <div className="section-label">
-          DOPPLER TUNING <span>{inPass ? 'LIVE' : time(sample, true) + ' ' + zoneName()}</span>
-        </div>
-        {!inPass && (
-          <label className="scrubber">
-            <span>Rise</span>
-            <input
-              type="range"
-              aria-label="Preview Doppler across pass"
-              min="0"
-              max="100"
-              value={t}
-              onChange={(e) => setT(Number(e.target.value))}
-            />
-            <span>Set</span>
-          </label>
-        )}
-        <div className="tuned">
-          <div>
-            <span>Receive</span>
-            <strong>{current.rx.toFixed(3)}</strong>
-          </div>
-          <div>
-            <span>{pass.sat.up ? 'Transmit' : 'No uplink'}</span>
-            <strong>{current.tx?.toFixed(3) ?? '—'}</strong>
-          </div>
-        </div>
-        <p className="fine">
-          Radio setting in MHz. Exact: RX {d.rx.toFixed(5)}
-          {d.tx !== null ? ` / TX ${d.tx.toFixed(5)}` : ''}.{' '}
-          {live && `${Math.round(live.az)}° ${compass(live.az)} / ${live.el.toFixed(1)}° el.`}
-        </p>
-        <table className="doppler-table">
-          <thead>
-            <tr>
-              <th>From ({zoneName()})</th>
-              <th>RX MHz</th>
-              <th>TX MHz</th>
-            </tr>
-          </thead>
-          <tbody>
-            {steps.map((s) => (
-              <tr key={s.time} className={s === current ? 'current' : ''}>
-                <td>{time(s.time, true)}</td>
-                <td>{s.rx.toFixed(3)}</td>
-                <td>{s.tx?.toFixed(3) ?? '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="fine">
-          {steps.length === 1
-            ? 'No retuning needed on this pass: the Doppler drift stays within 3.5 kHz.'
-            : `${steps.length} settings for this pass.`}{' '}
-          The radio is retuned in 5 kHz steps only when the drift passes 3.5 kHz, so lower passes need fewer
-          changes and 2 m rarely needs any. HT app Doppler control is available with compatible firmware.
-        </p>
-      </div>
-      {heard?.notHeard && (
-        <div className="not-heard" role="note">
-          <Info size={15} />
-          <p>
-            <strong>Not heard recently.</strong> None of the {heard.total} AMSAT report
-            {heard.total === 1 ? '' : 's'} in the last {heard.days} days heard this service. Listen before you
-            plan around it.
-          </p>
-        </div>
-      )}
-      <div className="operating-note">
-        <Info size={15} />
-        <div>
-          <strong>{pass.sat.condition}</strong>
-          <p>{pass.sat.notes}</p>
-          {heard && <p className="activity">{activityText(heard)}</p>}
-          {pass.sat.daylight && (
-            <p className="sun-window">
-              <Sun size={13} />{' '}
-              {`TX in sunlight only: ${pass.windows.map((w) => time(w[0], true) + '–' + time(w[1], true)).join(', ')} ${zoneName()}`}
-            </p>
-          )}
-          {pass.sat.event && (
-            <p>
-              Scheduled opportunity:{' '}
-              {pass.windows.map((w) => time(w[0], true) + '–' + time(w[1], true)).join(', ')} {zoneName()}.
-            </p>
-          )}
-          <a href={pass.sat.source} target="_blank" rel="noreferrer">
-            Operator / frequency source <ArrowUpRight size={12} />
-          </a>
-        </div>
-      </div>
-      <div className="orbit-entry">
-        <button className="button" onClick={onOrbit}>
-          <SatelliteIcon size={14} /> HT app orbital data
-        </button>
-        <span>Same daily orbital data as the predictions</span>
-      </div>
-      <div className="detail-actions">
-        <button className="button" onClick={() => ics(pass, station)}>
-          <Download size={14} /> Save pass
-        </button>
-        <a className="text-link" href={sources.status} target="_blank" rel="noreferrer">
-          Check live reports <ArrowUpRight size={13} />
-        </a>
-      </div>
-      <p className="fine element-age">
-        Orbit epoch {utcDate(pass.element.epoch)} {utcTime(pass.element.epoch)} UTC ·{' '}
-        {Math.max(0, (now - pass.element.epoch) / 86400000).toFixed(1)} days old
-      </p>
-    </aside>
-  );
-}
+import { clockTime, dateYear, makeClock, offsetLabel, until, utcDate, utcTime } from './lib/time';
+import { reachableCatalog, localizePasses } from './lib/visibility';
+
 export default function Home() {
   const modalRef = useRef<HTMLElement>(null);
-  const lastRefresh = useRef(0);
+  const { elements, activity, data, fetching, load } = useOrbitData();
   const [stationConfirmed, setStationConfirmed] = useState(false);
   const [station, setStation] = useState<Station>(defaultStation),
     [editing, setEditing] = useState(false),
     [orbitSatId, setOrbitSatId] = useState<string | null>(null);
-  const [elements, setElements] = useState<Element[]>(initialData.elements),
-    [fetching, setFetching] = useState(true),
-    [data, setData] = useState({
-      kind: 'bundled',
-      fetchedAt: initialData.bundle.fetchedAt,
-      error: '',
-      provider: initialData.bundle.provider,
-    });
-  const [activity, setActivity] = useState<Reports | null>(() => parseActivity(initialData.bundle.activity));
   const [utc, setUtc] = useState(() => {
     try {
       return localStorage.getItem('northbound-utc') === '1';
@@ -437,42 +57,6 @@ export default function Home() {
     [visibleCount, setVisibleCount] = useState(12);
   function update<K extends keyof Filters>(k: K, v: Filters[K]) {
     setFilters((f) => ({ ...f, [k]: v }));
-  }
-  async function load() {
-    lastRefresh.current = Date.now();
-    setFetching(true);
-    const candidates = [initialData];
-    try {
-      const cached = JSON.parse(localStorage.getItem('northbound-orbits') || 'null');
-      if (cached) candidates.push(parseBundle(cached, Date.now()));
-    } catch {}
-    let downloaded = false;
-    try {
-      const response = await fetch(`${import.meta.env.BASE_URL}data/orbits.json`, {
-        cache: 'no-cache',
-        signal: AbortSignal.timeout(15000),
-      });
-      if (!response.ok) throw Error('Published data unavailable');
-      candidates.push(parseBundle(await response.json(), Date.now()));
-      downloaded = true;
-    } catch {
-      /* Keep the newest verified browser cache or bundled dataset. */
-    }
-    const chosen = candidates.sort(
-      (a, b) => Date.parse(b.bundle.fetchedAt) - Date.parse(a.bundle.fetchedAt),
-    )[0];
-    setElements(chosen.elements);
-    setActivity(parseActivity(chosen.bundle.activity));
-    setData({
-      kind: downloaded ? 'published' : chosen === initialData ? 'bundled' : 'cached',
-      fetchedAt: chosen.bundle.fetchedAt,
-      provider: chosen.bundle.provider,
-      error: downloaded ? '' : 'Could not check for a newer published dataset. Using saved orbital data.',
-    });
-    try {
-      localStorage.setItem('northbound-orbits', JSON.stringify(chosen.bundle));
-    } catch {}
-    setFetching(false);
   }
   useEffect(() => {
     const t = Date.now();
@@ -495,23 +79,14 @@ export default function Home() {
         setStation({ ...s, locator: typeof s.locator === 'string' ? s.locator : undefined });
     } catch {}
     setEditing(true);
-    void load();
-    /* The clock, live Doppler and sky position follow `now` every second. Passes are only recalculated when `start` changes, every 10 minutes; finished passes drop out through `now`. */ const clock =
-        setInterval(() => {
-          const t = Date.now();
-          setNow(t);
-          setStart(Math.floor(t / 600000) * 600000);
-        }, 1000),
-      refresh = setInterval(() => void load(), 3600000);
-    const resume = () => {
-      if (document.visibilityState === 'visible' && Date.now() - lastRefresh.current >= 3600000) void load();
-    };
-    document.addEventListener('visibilitychange', resume);
-    return () => {
-      clearInterval(clock);
-      clearInterval(refresh);
-      document.removeEventListener('visibilitychange', resume);
-    };
+    // The clock, live Doppler and sky position follow `now` every second. Passes are only
+    // recalculated when `start` changes, every 10 minutes; finished passes drop out through `now`.
+    const clock = setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+      setStart(Math.floor(t / 600000) * 600000);
+    }, 1000);
+    return () => clearInterval(clock);
   }, []);
   useEffect(() => {
     if (!editing && !sourceOpen && !orbitSatId) return;
@@ -627,7 +202,9 @@ export default function Home() {
       return !v;
     });
   }
-  zone = utc ? 'UTC' : undefined;
+  const clock = useMemo(() => makeClock(utc), [utc]);
+  const { time } = clock;
+  const zoneName = () => clock.name;
   function saveStation(s: Station) {
     setStation(s);
     setStationConfirmed(true);
@@ -816,282 +393,48 @@ export default function Home() {
           </div>
         )}
         <div className={`workspace ${tab === 'guide' ? 'guide-layout' : ''}`}>
-          <aside className="filters" aria-label="Pass filters">
-            <div className="filter-heading">
-              <h2>
-                <SlidersHorizontal size={15} /> Filter passes
-              </h2>
-              <button onClick={reset}>Reset</button>
-            </div>
-            <fieldset className="status-filter">
-              <legend>STATION CAPABILITY</legend>
-              <div className="status-buttons">
-                {[
-                  ['all', 'All'],
-                  ['work', 'Work'],
-                  ['listen', 'Listen'],
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    className={filters.status === value ? 'selected' : ''}
-                    onClick={() => update('status', value)}
-                    aria-pressed={filters.status === value}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <p>Work = compatible with this station. Activation is checked separately.</p>
-            </fieldset>
-            <label className="field">
-              SATELLITE
-              <select
-                aria-label="Satellite"
-                value={activeFilters.satellite}
-                onChange={(e) => update('satellite', e.target.value)}
-              >
-                <option value="all">All reachable satellites</option>
-                {options.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} · {s.mode}
-                    {s.id === 'rs95-sstv' ? ' images' : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="band-fields">
-              <label className="field">
-                UPLINK
-                <select
-                  aria-label="Uplink band"
-                  value={filters.uplink}
-                  onChange={(e) => update('uplink', e.target.value)}
-                >
-                  <option value="all">Any band</option>
-                  {['2m', '70cm', 'none']
-                    .filter((b) => availableCatalog.some((s) => band(s.up) === b))
-                    .map((b) => (
-                      <option key={b} value={b}>
-                        {b === 'none' ? 'No uplink' : b === '2m' ? '2 m' : '70 cm'}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label className="field">
-                DOWNLINK
-                <select
-                  aria-label="Downlink band"
-                  value={filters.downlink}
-                  onChange={(e) => update('downlink', e.target.value)}
-                >
-                  <option value="all">Any band</option>
-                  {['2m', '70cm']
-                    .filter((b) => availableCatalog.some((s) => band(s.down) === b))
-                    .map((b) => (
-                      <option key={b} value={b}>
-                        {b === '2m' ? '2 m' : '70 cm'}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            </div>
-            <label className="field">
-              MODE
-              <select aria-label="Mode" value={filters.mode} onChange={(e) => update('mode', e.target.value)}>
-                <option value="all">All modes</option>
-                {['FM voice', 'APRS', 'SSTV']
-                  .filter((m) => availableCatalog.some((s) => s.mode === m))
-                  .map((m) => (
-                    <option key={m}>{m}</option>
-                  ))}
-              </select>
-            </label>
-            <label className="field elevation-label">
-              MINIMUM PEAK <strong>{filters.elevation}°</strong>
-              <input
-                type="range"
-                min="0"
-                max="90"
-                step="5"
-                value={filters.elevation}
-                aria-label="Minimum peak elevation"
-                onChange={(e) => update('elevation', Number(e.target.value))}
-              />
-              <span className="range-labels">
-                <span>0°</span>
-                <span>45°</span>
-                <span>90°</span>
-              </span>
-            </label>
-            <label className="field">
-              LOOK AHEAD
-              <select
-                aria-label="Look ahead"
-                value={hours}
-                onChange={(e) => setHours(Number(e.target.value))}
-              >
-                <option value="24">Next 24 hours</option>
-                <option value="48">Next 48 hours</option>
-                <option value="72">Next 72 hours</option>
-              </select>
-            </label>
-            <label className="check-field">
-              <input
-                type="checkbox"
-                checked={showUncertain}
-                onChange={(e) => setShowUncertain(e.target.checked)}
-              />
-              <span>
-                Include uncertain repeaters<small>Only those reachable from your station</small>
-              </span>
-            </label>
-            <div className="station-note">
-              <Radio size={17} />
-              <h3>One radio. Half duplex.</h3>
-              <p>
-                Listen before calling. You can’t hear your own downlink while transmitting. Keep calls short
-                and rotate the Yagi for the clearest signal.
-              </p>
-              <a href={sources.radio} target="_blank" rel="noreferrer">
-                VR-N76 operating guide <ArrowUpRight size={12} />
-              </a>
-            </div>
-          </aside>
+          <FiltersPanel
+            filters={filters}
+            activeFilters={activeFilters}
+            availableCatalog={availableCatalog}
+            options={options}
+            hours={hours}
+            showUncertain={showUncertain}
+            update={update}
+            reset={reset}
+            setHours={setHours}
+            setShowUncertain={setShowUncertain}
+          />
           {tab === 'passes' ? (
             <>
-              <section className="pass-list" aria-label="Upcoming passes">
-                <div className="list-heading">
-                  <div>
-                    <h2>
-                      Upcoming passes <span>{passes.length}</span>
-                    </h2>
-                    <p>
-                      {now ? `${date(now)}–${date(start + hours * 3600000)}` : 'Calculating…'} <span>·</span>{' '}
-                      {utc ? 'All times UTC' : `All times local (${offsetLabel(now)})`}
-                    </p>
-                  </div>
-                  <span className="list-legend">
-                    <i /> {countWork} work <i className="rx" /> {countListen} listen
-                  </span>
-                </div>
-                <div className="list-hint">
-                  <Info size={13} />
-                  <span>
-                    Only reachable services in your next {hours} hours at {filters.elevation}°+ peak.
-                    Activation is not guaranteed.
-                    {activeFilters.status === 'work'
-                      ? ' Showing satellites you can work; choose All or Listen for receive-only services.'
-                      : ''}
-                  </span>
-                </div>
-                {passes.length === 0 ? (
-                  <div className="empty">
-                    <SatelliteIcon size={30} />
-                    <h3>No passes match these filters</h3>
-                    <p>
-                      Try a lower elevation, a longer look ahead or another location. Check the station
-                      coordinates if the sky seems unexpectedly quiet.
-                    </p>
-                    <button className="button" onClick={reset}>
-                      Reset filters
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    {passes.slice(0, visibleCount).map((p, i) => (
-                      <div key={p.key}>
-                        {(i === 0 || date(p.aos.time) !== date(passes[i - 1].aos.time)) && (
-                          <div className="day-heading">
-                            {date(p.aos.time)}{' '}
-                            <span>
-                              {new Date(p.aos.time).toLocaleDateString('en-GB', {
-                                weekday: 'long',
-                                timeZone: zone,
-                              })}
-                            </span>
-                          </div>
-                        )}
-                        <button
-                          className={`pass-row ${picked?.key === p.key ? 'chosen' : ''}`}
-                          onClick={() => {
-                            setSelected(p.key);
-                            setMobileDetail(true);
-                          }}
-                          aria-pressed={picked?.key === p.key}
-                          aria-label={`View ${p.sat.name} ${p.sat.mode} pass at ${time(p.aos.time)} ${zoneName()}, peak ${p.peak.el.toFixed(0)} degrees`}
-                        >
-                          <div className="pass-time">
-                            <strong>{time(p.aos.time)}</strong>
-                            <span>{time(p.los.time)}</span>
-                          </div>
-                          <div className="pass-name">
-                            <div>
-                              <h3>{p.sat.name}</h3>
-                              <Badge access={p.access} small />
-                            </div>
-                            <p>
-                              {p.sat.mode} <span>·</span>{' '}
-                              {band(p.sat.up) === 'none' ? 'RX' : band(p.sat.up) + ' →'} {band(p.sat.down)}
-                            </p>
-                            <small>
-                              {p.sat.daylight
-                                ? 'Sunlit window available'
-                                : p.sat.event
-                                  ? 'Scheduled SSTV event'
-                                  : p.sat.condition}
-                            </small>
-                            {((a) =>
-                              a && (
-                                <small className={`activity ${a.notHeard ? 'warn' : ''}`}>
-                                  {a.notHeard ? '⚠ Not heard recently · ' : ''}
-                                  {activityText(a)}
-                                </small>
-                              ))(activityFor(p.sat, activity, now))}
-                          </div>
-                          <div className="pass-geometry">
-                            <Arc pass={p} />
-                            <strong>{p.peak.el.toFixed(0)}°</strong>
-                            <span>
-                              {compass(p.aos.az)} → {compass(p.los.az)}
-                            </span>
-                          </div>
-                          <ChevronRight size={16} className="row-chevron" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {passes.length > visibleCount && (
-                  <button className="show-more" onClick={() => setVisibleCount((n) => n + 12)}>
-                    Show next {Math.min(12, passes.length - visibleCount)} passes{' '}
-                    <span>{passes.length - visibleCount} more in this window</span>
-                    <ChevronRight size={14} />
-                  </button>
-                )}
-                <div className="list-foot">
-                  <span>
-                    <span className="filled-dot" /> Rise
-                  </span>
-                  <span>
-                    <span className="hollow-dot" /> Set
-                  </span>
-                  <p>True bearings · clear 0° horizon · no terrain mask</p>
-                </div>
-                {result.unavailable.length > 0 && (
-                  <p className="fine missing">
-                    {result.unavailable.length} spacecraft excluded: missing, invalid, future-dated or
-                    older-than-7-day elements.{' '}
-                    <button onClick={() => setSourceOpen(true)}>Data details</button>
-                  </p>
-                )}
-              </section>
+              <PassList
+                passes={passes}
+                picked={picked}
+                result={result}
+                filters={filters}
+                activeFilters={activeFilters}
+                hours={hours}
+                now={now}
+                start={start}
+                activity={activity}
+                countWork={countWork}
+                countListen={countListen}
+                visibleCount={visibleCount}
+                clock={clock}
+                reset={reset}
+                setSelected={setSelected}
+                setMobileDetail={setMobileDetail}
+                setSourceOpen={setSourceOpen}
+                setVisibleCount={setVisibleCount}
+              />
               <div className={`detail-container ${mobileDetail ? 'mobile-open' : ''}`}>
                 {picked ? (
-                  <Detail
+                  <PassDetail
                     pass={picked}
                     station={station}
                     now={now}
                     activity={activity}
+                    clock={clock}
                     onClose={() => setMobileDetail(false)}
                     onOrbit={() => setOrbitSatId(picked.sat.id)}
                   />
@@ -1105,99 +448,16 @@ export default function Home() {
               </div>
             </>
           ) : (
-            <section className="guide" aria-label="Satellite guide">
-              <div className="list-heading">
-                <div>
-                  <h2>Your station’s satellite guide</h2>
-                  <p>
-                    Reachable from your station in the next {hours} hours · {filters.elevation}°+ peak. Verify
-                    activation before transmitting.
-                  </p>
-                </div>
-                <span className="guide-count">{filteredCatalog.length} services</span>
-              </div>
-              {(['work', 'listen'] as const).map((access) => (
-                <div className="guide-group" key={access}>
-                  <h3>
-                    {access === 'work' ? <Radio size={16} /> : <Headphones size={16} />}{' '}
-                    {access === 'work' ? 'Satellites you can work' : 'Satellites worth listening to'}
-                  </h3>
-                  {filteredCatalog
-                    .filter((s) => s.access === access)
-                    .map((s) => (
-                      <article className="guide-card" key={s.id}>
-                        <div className="guide-card-top">
-                          <div>
-                            <h4>
-                              {s.name} <span>{s.mode}</span>
-                            </h4>
-                            <p>
-                              {s.subtitle} · NORAD {s.norad}
-                            </p>
-                          </div>
-                          <div className="guide-card-actions">
-                            <button
-                              onClick={() => setOrbitSatId(s.id)}
-                              aria-label={`Orbital data for ${s.name} ${s.mode}`}
-                            >
-                              Orbit data <SatelliteIcon size={13} />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setFilters({
-                                  ...defaults,
-                                  status: 'all',
-                                  elevation: filters.elevation,
-                                  satellite: s.id,
-                                });
-                                setTab('passes');
-                              }}
-                            >
-                              View passes <ArrowRight size={13} />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="guide-frequencies">
-                          <span>
-                            RX <strong>{frequency(s.down)}</strong>
-                          </span>
-                          <span>
-                            TX <strong>{frequency(s.up)}</strong>
-                          </span>
-                          <span>
-                            Tone <strong>{s.tone}</strong>
-                          </span>
-                        </div>
-                        <p>
-                          <strong>{s.condition}.</strong> {s.notes}
-                        </p>
-                        {((a) =>
-                          a && (
-                            <p className={`activity ${a.notHeard ? 'warn' : ''}`}>
-                              {a.notHeard ? 'Not heard recently · ' : ''}
-                              {activityText(a)}
-                            </p>
-                          ))(activityFor(s, activity, now))}
-                        <a href={s.source} target="_blank" rel="noreferrer">
-                          Source <ArrowUpRight size={11} />
-                        </a>
-                      </article>
-                    ))}
-                  {!filteredCatalog.some((s) => s.access === access) && (
-                    <p className="fine">No services in this category match the filters.</p>
-                  )}
-                </div>
-              ))}
-              <div className="excluded">
-                <h3>Receive and operate with your FM radio</h3>
-                <p>
-                  APRS entries require a compatible satellite profile and path. SSTV needs a phone or computer
-                  audio decoder to turn the signal into a picture. Only services with a predicted usable
-                  window from this station appear here, subject to your filters. A clear geometric path does
-                  not confirm transmitter activation or account for local terrain.
-                </p>
-              </div>
-            </section>
+            <Guide
+              filteredCatalog={filteredCatalog}
+              filters={filters}
+              hours={hours}
+              now={now}
+              activity={activity}
+              setFilters={setFilters}
+              setOrbitSatId={setOrbitSatId}
+              setTab={setTab}
+            />
           )}
         </div>
         <footer>
@@ -1234,126 +494,13 @@ export default function Home() {
         />
       )}
       {sourceOpen && (
-        <div className="modal-backdrop" onClick={() => setSourceOpen(false)}>
-          <section
-            ref={modalRef}
-            className="modal source-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="sources-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="modal-close icon-button"
-              aria-label="Close sources"
-              onClick={() => setSourceOpen(false)}
-            >
-              <X size={18} />
-            </button>
-            <h2 id="sources-title">Sources & prediction notes</h2>
-            <p>
-              Frequencies and operating restrictions reviewed {dateYear(Date.parse(reviewed))}. Activation
-              labels are a dated review, not live reception reports.
-            </p>
-            <ul className="sources-list">
-              {[
-                ['AMSAT orbital elements', sources.tle],
-                ['SatNOGS supplementary orbital elements', sources.satnogs],
-                ['APRS satellite frequencies', sources.packet],
-                ['FM frequencies & restrictions', sources.fm],
-                ['AMSAT operator reception reports (CC BY 4.0)', sources.status],
-                ['ARISS station status', sources.iss],
-                ['Dated ISS SSTV event announcements', sources.sstv],
-                ['SSTV satellite frequencies', sources.images],
-                ['SONATE-2 operator / schedule', sources.sonate],
-                ['HT manual · satellite orbital entry', htManual],
-                ['VGC radio / HT app guide', sources.radio],
-                ['VGC APRS / satellite path setup', sources.radioAprs],
-              ].map(([label, url]) => (
-                <li key={url}>
-                  <a href={url} target="_blank" rel="noreferrer">
-                    {label}
-                    <ArrowUpRight size={13} />
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <h3>Orbital data</h3>
-            <p>
-              {data.kind === 'published'
-                ? 'Published ' + data.provider + ' dataset'
-                : data.kind === 'cached'
-                  ? 'Last successful browser cache'
-                  : 'Bundled orbital dataset'}
-              {data.fetchedAt
-                ? ` · retrieved ${utcDate(Date.parse(data.fetchedAt))} ${utcTime(Date.parse(data.fetchedAt))} UTC`
-                : ''}
-              . Orbital elements are downloaded and validated centrally once a day at 03:17 UTC, using AMSAT
-              and SatNOGS, with CelesTrak as a fallback. This app checks the shared published file on opening,
-              hourly and when returning after an hour away. Refresh checks that file; it does not contact the
-              satellite-data providers. The orbital-data panel uses the same elements as the predictions. If
-              an update fails, the last good dataset is retained. Frequencies, tones and operating schedules
-              are a separate reviewed catalogue, not live reception reports. Missing or invalid TLEs and
-              elements older than 7 days are excluded; an element-age notice starts at 3 days, and a
-              dataset-update notice after 2 days.
-            </p>
-            {result.unavailable.length > 0 && <p>Unavailable NORAD IDs: {result.unavailable.join(', ')}.</p>}
-            <h3>Reception reports</h3>
-            <p>
-              The small report line on each service counts operator reports sent to AMSAT’s status page
-              (status.amsat.org, licensed CC BY 4.0) over the last 7 days and the share that heard the
-              service. It is collected once a day with the orbital data. A “not heard recently” warning means
-              at least three reports exist and none heard it. Reports are voluntary and worldwide: no reports
-              does not mean a satellite is off, and a good figure does not promise it is on during your pass.
-            </p>
-            <h3>Which satellites appear</h3>
-            <p>
-              The worldwide catalogue contains FM voice, 1200-baud AFSK packet and FM SSTV services suitable
-              for a 2 m / 70 cm FM radio. The guide and satellite choices use the same calculated passes as
-              the planner: at least one remaining modeled operating window in the selected 24, 48 or 72 hours,
-              at your minimum peak elevation. Missing or stale orbits, unreachable spacecraft, expired events
-              and known service blackouts do not appear as choices. Other filters narrow that list further.
-              Unknown activation schedules remain explicitly conditional; this is not a live receiver or an
-              exhaustive satellite database.
-            </p>
-            <h3>What the times mean</h3>
-            <p>
-              SGP4 propagation with satellite.js, WGS-84 observer coordinates. AOS and LOS cross an
-              unobstructed 0° horizon; the elevation filter selects peak elevation, not a different rise/set
-              threshold. Bearings are true north. Terrain, refraction and obstructions are not modeled. Times
-              are predictions, displayed to seconds for tuning; use fresh elements and arrive early.
-            </p>
-            <p>
-              AO-91 sunlight windows exclude the modeled Earth shadow with a conservative penumbra margin;
-              transitions resolve to 5 seconds. Transmitter schedules are only applied where a dated window is
-              known. Unscheduled SSTV passes do not promise images.
-            </p>
-            {catalog
-              .filter((s) => s.event && Date.parse(s.event.end) > now)
-              .map((s) => (
-                <p key={s.id}>
-                  {s.name} {s.mode} ({s.subtitle}): {span(s.event!)} on {frequency(s.down)} MHz. This dated
-                  announcement takes precedence over general tables; check the operator for later changes.
-                </p>
-              ))}
-            {catalog
-              .filter((s) => s.blackout && Date.parse(s.blackout.end) > now)
-              .map((s) => (
-                <p key={s.id}>
-                  {s.name} {s.mode} is not offered {span(s.blackout!)}.
-                </p>
-              ))}
-            <p>
-              Maidenhead entry accepts 4, 6 or 8 characters and uses the grid-cell centre. No GPS permission,
-              analytics or automatic radio control. Each opening asks you to confirm your remembered station,
-              or the Reykjavík default. Station coordinates stay in this browser; requests for the shared data
-              file do not include them. No account or backend is required.
-            </p>
-            <button className="button" onClick={() => setSourceOpen(false)}>
-              Back to planner
-            </button>
-          </section>
-        </div>
+        <SourcesDialog
+          data={data}
+          now={now}
+          result={result}
+          modalRef={modalRef}
+          setSourceOpen={setSourceOpen}
+        />
       )}
     </div>
   );
