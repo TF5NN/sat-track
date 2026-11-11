@@ -1,34 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Activity,
-  Clock3,
-  Info,
-  MapPin,
-  Radio,
-  RefreshCw,
-  Satellite as SatelliteIcon,
-  Settings2,
-  ArrowUpRight,
-} from 'lucide-react';
+import { ArrowUpRight, Satellite as SatelliteIcon } from 'lucide-react';
+import DataStatus from './components/data-status';
 import FiltersPanel from './components/filters';
 import Guide from './components/guide';
+import Intro from './components/intro';
 import OrbitDialog from './components/orbit-dialog';
+import PageHeader from './components/page-header';
 import PassDetail from './components/pass-detail';
 import PassList from './components/pass-list';
 import SourcesDialog from './components/sources-dialog';
 import StationDialog from './components/station-dialog';
-import { builtAt, useOrbitData } from './hooks/use-orbit-data';
+import SummaryStrip from './components/summary-strip';
+import { useModalFocus } from './hooks/use-modal-focus';
+import { useOrbitData } from './hooks/use-orbit-data';
 import { catalog, band, reviewed, uncertain } from './lib/catalog';
 import {
   defaultFilters as defaults,
   defaultStation,
   filterPasses,
-  grid,
   predict,
   type Filters,
   type Station,
 } from './lib/orbit';
-import { clockTime, dateYear, makeClock, offsetLabel, until, utcDate, utcTime } from './lib/time';
+import { dateYear, makeClock } from './lib/time';
 import { reachableCatalog, localizePasses } from './lib/visibility';
 
 export default function Home() {
@@ -88,38 +82,16 @@ export default function Home() {
     }, 1000);
     return () => clearInterval(clock);
   }, []);
-  useEffect(() => {
-    if (!editing && !sourceOpen && !orbitSatId) return;
-    const previous = document.activeElement as HTMLElement;
-    const root = modalRef.current;
-    const controls = () =>
-      Array.from(root?.querySelectorAll<HTMLElement>('button,a[href],input,select,textarea,summary') ?? []);
-    controls()[0]?.focus();
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (stationConfirmed) setEditing(false);
-        setSourceOpen(false);
-        setOrbitSatId(null);
-      }
-      if (e.key === 'Tab') {
-        const c = controls(),
-          first = c[0],
-          last = c[c.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last?.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first?.focus();
-        }
-      }
-    };
-    window.addEventListener('keydown', key);
-    return () => {
-      window.removeEventListener('keydown', key);
-      previous?.focus();
-    };
-  }, [editing, sourceOpen, orbitSatId, stationConfirmed]);
+  useModalFocus(
+    modalRef,
+    editing || sourceOpen || !!orbitSatId,
+    () => {
+      if (stationConfirmed) setEditing(false);
+      setSourceOpen(false);
+      setOrbitSatId(null);
+    },
+    [editing, sourceOpen, orbitSatId, stationConfirmed],
+  );
   const rawResult = useMemo(
     () => (start ? predict(elements, catalog, station, start, hours) : { passes: [], unavailable: [] }),
     [elements, station, start, hours],
@@ -203,8 +175,6 @@ export default function Home() {
     });
   }
   const clock = useMemo(() => makeClock(utc), [utc]);
-  const { time } = clock;
-  const zoneName = () => clock.name;
   function saveStation(s: Station) {
     setStation(s);
     setStationConfirmed(true);
@@ -219,179 +189,28 @@ export default function Home() {
   const orbitSat = availableCatalog.find((s) => s.id === orbitSatId);
   return (
     <div className="app-shell">
-      <header className="header">
-        <a href={import.meta.env.BASE_URL} className="brand" aria-label="Northbound home">
-          <span className="brand-icon">
-            <svg viewBox="0 0 36 36" fill="none">
-              <circle cx="18" cy="18" r="13" />
-              <circle cx="18" cy="18" r="6" />
-              <path d="M18 18L29 7" />
-              <circle cx="29" cy="7" r="2" fill="currentColor" />
-            </svg>
-          </span>
-          <span>
-            NORTHBOUND<small>AMATEUR SATELLITE PLANNER</small>
-          </span>
-        </a>
-        <div className="header-right">
-          <span className="private">
-            <Radio size={12} /> FM satellite planner
-          </span>
-          <a className="callsign" href="https://github.com/TF5NN/sat-track" target="_blank" rel="noreferrer">
-            TF5NN ↗
-          </a>
-        </div>
-      </header>
+      <PageHeader />
       <main>
-        <section className="intro">
-          <div>
-            <div className="eyebrow location">
-              <span className="live-dot" /> OBSERVER STATION <span>/</span>{' '}
-              {(station.locator ?? grid(station)).toUpperCase()}
-            </div>
-            <h1>
-              Your next window
-              <br className="mobile-break" /> to space<span>.</span>
-            </h1>
-            <p>Point the Yagi. Find the signal. Make the contact.</p>
-          </div>
-          <button className="station-summary" onClick={() => setEditing(true)}>
-            <MapPin size={17} />
-            <span>
-              <strong>
-                {Math.abs(station.lat).toFixed(4)}° {station.lat < 0 ? 'S' : 'N'} ·{' '}
-                {Math.abs(station.lon).toFixed(4)}° {station.lon < 0 ? 'W' : 'E'}
-              </strong>
-              <small>2 m / 70 cm Yagi · FM half duplex</small>
-            </span>
-            <Settings2 size={15} />
-          </button>
-        </section>
-        <div className="radio-compatibility">
-          <Radio size={15} />
-          <p>
-            <strong>Designed for the VGC VR-N76.</strong> Pass, frequency and Doppler guidance applies to all
-            FM half-duplex 2 m / 70 cm radios.{' '}
-            <span>APRS needs packet/TNC support; SSTV images need an audio decoder.</span>
-          </p>
-        </div>
-        <div className="summary-strip">
-          <div className="summary-first">
-            <span className="summary-icon">
-              <SatelliteIcon size={20} />
-            </span>
-            <div>
-              <span className="eyebrow">NEXT MATCHING PASS</span>
-              <strong>
-                {next ? (
-                  <>
-                    {next.sat.name}{' '}
-                    <span className="summary-time">
-                      {time(next.aos.time)} {zoneName()}
-                    </span>
-                  </>
-                ) : (
-                  'Scanning the horizon'
-                )}
-              </strong>
-              <small>
-                {next
-                  ? `${until(next.aos.time, now)} · ${next.peak.el.toFixed(0)}° peak · ${next.sat.mode}`
-                  : 'Select filters and refresh orbital data'}
-              </small>
-            </div>
-          </div>
-          <div className="summary-stat">
-            <strong>
-              {passes.length}
-              <span>passes</span>
-            </strong>
-            <small>Next {hours} hours · your filters</small>
-          </div>
-          <div className="summary-stat">
-            <strong>
-              {high}
-              <span>above 30°</span>
-            </strong>
-            <small>More sky, less obstruction</small>
-          </div>
-          <div className="summary-clock">
-            <Clock3 size={15} />
-            <div>
-              <strong>
-                {now ? time(now, true) : '--:--:--'} <span>{utc ? 'UTC' : 'local'}</span>
-              </strong>
-              <small>
-                {now
-                  ? utc
-                    ? `Local ${clockTime(now, false, undefined)}`
-                    : `${offsetLabel(now)} · UTC ${utcTime(now)}`
-                  : ''}{' '}
-                ·{' '}
-                <button className="zone-toggle" onClick={toggleZone} aria-pressed={utc}>
-                  {utc ? 'Show local times' : 'Show UTC times'}
-                </button>
-              </small>
-            </div>
-          </div>
-        </div>
-        <div className="workspace-bar">
-          <nav aria-label="Planner views">
-            <button className={tab === 'passes' ? 'active' : ''} onClick={() => setTab('passes')}>
-              <Activity size={15} />
-              Pass planner
-            </button>
-            <button className={tab === 'guide' ? 'active' : ''} onClick={() => setTab('guide')}>
-              <SatelliteIcon size={15} />
-              Satellite guide
-            </button>
-          </nav>
-          <div className="data-tools">
-            <span className={`data-state ${data.kind !== 'published' ? 'muted' : ''}`}>
-              <span className="live-dot" />
-              {data.kind === 'published'
-                ? 'Daily orbital data'
-                : data.kind === 'cached'
-                  ? 'Cached orbital data'
-                  : 'Bundled orbital data'}
-            </span>
-            <button
-              className="icon-button"
-              disabled={fetching}
-              onClick={() => void load()}
-              aria-label="Refresh orbital data"
-            >
-              <RefreshCw size={15} className={fetching ? 'spin' : ''} />
-            </button>
-          </div>
-        </div>
-        {now > 0 && builtAt - now > 300000 && (
-          <div className="data-warning" role="alert">
-            <Info size={15} />
-            <span>
-              <strong>Your device clock looks wrong.</strong> It is set earlier than this app’s orbital data
-              was published ({utcDate(builtAt)} {utcTime(builtAt)} UTC). Pass times will be wrong or missing
-              until the date and time are corrected.
-            </span>
-          </div>
-        )}
-        {(data.error || oldest > 3 || publicationAge > 2) && (
-          <div className="data-warning" role="status">
-            <Info size={15} />
-            <span>
-              {data.error}{' '}
-              {publicationAge > 2
-                ? `The dataset was last checked ${publicationAge.toFixed(1)} days ago. `
-                : ''}
-              {oldest > 3
-                ? `Some orbit epochs are ${oldest.toFixed(1)} days old. Elements older than 7 days are excluded.`
-                : ''}
-            </span>
-            <button onClick={() => void load()} disabled={fetching}>
-              Retry refresh
-            </button>
-          </div>
-        )}
+        <Intro station={station} setEditing={setEditing} />
+        <SummaryStrip
+          passes={passes}
+          next={next}
+          high={high}
+          hours={hours}
+          now={now}
+          clock={clock}
+          toggleZone={toggleZone}
+        />
+        <DataStatus
+          tab={tab}
+          setTab={setTab}
+          data={data}
+          fetching={fetching}
+          load={load}
+          now={now}
+          oldest={oldest}
+          publicationAge={publicationAge}
+        />
         <div className={`workspace ${tab === 'guide' ? 'guide-layout' : ''}`}>
           <FiltersPanel
             filters={filters}

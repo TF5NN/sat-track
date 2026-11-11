@@ -8,9 +8,12 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit && vite build && node scripts/verify-build.mjs",
+    "build": "npm run format:check && tsc --noEmit && vite build && node scripts/verify-build.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --import tsx --test tests/*.test.mjs",
+    "test:ui": "node tests/ui/snapshot.mjs",
+    "format": "prettier --write \"src/**/*.tsx\" \"src/hooks/*.ts\" src/lib/time.ts",
+    "format:check": "prettier --check \"src/**/*.tsx\" \"src/hooks/*.ts\" src/lib/time.ts",
     "sync:orbits": "node --import tsx scripts/sync-orbits.ts",
     "validate:data": "node --import tsx scripts/validate-data.ts"
   },

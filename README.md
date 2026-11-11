@@ -37,6 +37,17 @@ npm run build
 npm run preview
 ```
 
+`npm run build` first checks that the interface code is formatted with Prettier; run `npm run format` to fix a failure.
+
+## Code layout
+
+- `src/App.tsx` holds the page's state and wires the pieces together.
+- `src/components/` has one file per part of the page: filters, pass list, pass briefing, satellite guide, summary strip, data status and the three dialogs.
+- `src/hooks/` loads and refreshes the orbital data and handles keyboard focus inside dialogs.
+- `src/lib/` is the calculation and data code (orbits, catalogue, time formatting, AMSAT reports, calendar and TLE export), covered by `npm test`.
+
+`npm run test:ui -- write` records the built app's HTML across 52 steps (dialogs, filters, a live pass, phone layout, clock and data warnings) with a frozen clock; `npm run test:ui -- check` compares a later build against it. Use it around changes that must not alter the page. It needs Playwright with Chromium and is not part of `npm test` or CI.
+
 The build is ordinary static HTML/CSS/JavaScript in `dist/`. It needs no backend, accounts, database or runtime secrets.
 
 ## Daily orbital-data update
