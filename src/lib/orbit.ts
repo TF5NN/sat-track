@@ -25,7 +25,9 @@ export function parseTLE(text:string): Element[] {
     const yy=Number(a.slice(18,20)), day=Number(a.slice(20,32));
     const epoch=Date.UTC(yy<57?2000+yy:1900+yy,0,1)+(day-1)*DAY;
     if(!Number.isFinite(epoch)||!Number.isFinite(id)) continue;
-    result.push({norad:id,name:i>0?lines[i-1].replace(/^0 /,''):'',line1:a,line2:b,epoch}); i++;
+    // The line above is a name only if it is not itself an element line (name-less 2-line files).
+    const above=i>0?lines[i-1]:'',name=/^[12] /.test(above)&&above.length>=69?'':above.replace(/^0 /,'').trim();
+    result.push({norad:id,name,line1:a,line2:b,epoch}); i++;
   }
   return result;
 }

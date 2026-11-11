@@ -7,8 +7,14 @@ export type OrbitBundle = {
   missing: number[];
 };
 const DAY = 86400000;
-export function validOrbit(element: Element, now: number): boolean {
-  if (element.epoch > now + DAY || now - element.epoch > 7 * DAY || element.norad <= 0) return false;
+// Fresh enough to predict with: at most 7 days old and at most 1 day in the future.
+export const freshOrbit = (element: Element, now: number) =>
+  element.epoch <= now + DAY && now - element.epoch <= 7 * DAY;
+export const validOrbit = (element: Element, now: number) =>
+  freshOrbit(element, now) && plausibleOrbit(element);
+// Structurally sound and propagates, whatever its age.
+export function plausibleOrbit(element: Element): boolean {
+  if (element.norad <= 0) return false;
   const epochDay = Number(element.line1.slice(20,32));
   const inclination = Number(element.line2.slice(8,16));
   const eccentricity = Number('0.' + element.line2.slice(26,33));

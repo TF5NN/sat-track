@@ -25,7 +25,7 @@ export default function OrbitDialog({ sat, element, now, fetching, data, dialogR
   function download() {
     if (!element || !usable) return;
     const link = document.createElement('a');
-    const url = URL.createObjectURL(new Blob([exportTLE(element, true)], { type: 'text/plain;charset=utf-8' }));
+    const url = URL.createObjectURL(new Blob([exportTLE(element, true, sat.name)], { type: 'text/plain;charset=utf-8' }));
     link.href = url; link.download = `${sat.norad}-${sat.name.replace(/[^a-z0-9-]/gi, '-')}.tle`; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }

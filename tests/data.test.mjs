@@ -2,7 +2,7 @@ import {strict as assert} from 'node:assert';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
 import {parseTLE} from '../src/lib/orbit.ts';
-import {parseBundle,validOrbit} from '../src/lib/orbital-data.ts';
+import {parseBundle,validOrbit,plausibleOrbit,freshOrbit} from '../src/lib/orbital-data.ts';
 import {prepareDataset} from '../scripts/sync-orbits.ts';
 const now=Date.parse('2026-11-10T14:30:00Z');
 const elements=parseTLE(readFileSync('tests/fixtures/orbits-2026-11-10.txt','utf8'));
@@ -58,4 +58,12 @@ test('one core spacecraft without elements does not block the daily update',asyn
   await assert.rejects(()=>readFile(empty,'utf8'),/ENOENT/);
   assert.equal(await readFile(file,'utf8'),text);
  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('age and plausibility are judged separately, and bundled data loads on a slow clock',()=>{
+ const stale={...good,epoch:now-8*86400000};
+ assert(plausibleOrbit(stale)&&!freshOrbit(stale,now)&&!validOrbit(stale,now),'an old but sound orbit is a warning, not corrupt data');
+ assert(!plausibleOrbit({...good,line2:good.line2.slice(0,52)+'00.00000000'+good.line2.slice(63)}));
+ assert.throws(()=>parseBundle(bundle,now-86400000),'downloads dated in the future are still rejected');
+ assert.equal(parseBundle(bundle,Infinity).elements[0].norad,25544,'the bundled copy is accepted whatever the device clock says');
 });

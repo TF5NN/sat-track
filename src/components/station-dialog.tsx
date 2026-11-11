@@ -1,7 +1,7 @@
 'use client';
 import { useState, type RefObject } from 'react';
 import { Check, MapPin, X } from 'lucide-react';
-import { parseLocator } from '../lib/locator';
+import { parseLocator, locatorFor } from '../lib/locator';
 import { defaultStation, grid, type Station } from '../lib/orbit';
 
 type Props = {
@@ -19,6 +19,14 @@ export default function StationDialog({ station, dialogRef, onSave, onClose, ope
   function switchMethod(next: 'grid' | 'coordinates') {
     if (next === 'coordinates' && method === 'grid' && cell) {
       setLat(cell.lat.toFixed(6)); setLon(cell.lon.toFixed(6));
+    }
+    if (next === 'grid' && method === 'coordinates') {
+      // Carry typed coordinates over, so saving does not silently use the previous grid.
+      const latitude = Number(lat), longitude = Number(lon);
+      if (lat.trim() && lon.trim() && Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+        && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180) {
+        setLocator(locatorFor(latitude, longitude).toUpperCase());
+      }
     }
     setMethod(next); setError('');
   }

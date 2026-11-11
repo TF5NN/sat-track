@@ -24,6 +24,10 @@ for(const element of elements){
  assert(orbitUsable(element,element.epoch+86400000));assert(orbitUsable(element,element.epoch+7*86400000));assert(!orbitUsable(element,element.epoch+7*86400000+1));assert(!orbitUsable(element,element.epoch-86400001));
 }
 assert(!orbitUsable(undefined,Date.now()));
+assert.equal(exportTLE(elements[0],true,'AO-123\n'),'AO-123\r\n'+elements[0].line1+'\r\n'+elements[0].line2+'\r\n','download uses the catalogue name');
+const nameless=parseTLE(elements.slice(0,3).map(e=>e.line1+'\n'+e.line2).join('\n'));
+assert.equal(nameless.length,3);assert(nameless.every(e=>e.name===''),'name-less files never take an element line as a name');
+assert.deepEqual(parseTLE(elements.slice(0,3).map(e=>e.name+'\n'+e.line1+'\n'+e.line2).join('\n')).map(e=>e.name),elements.slice(0,3).map(e=>e.name));
 const original=elements[0],updated={...original,line1:elements[1].line1,line2:elements[1].line2};
 assert.notEqual(exportTLE(original),exportTLE(updated),'export always reflects the supplied latest element');
 console.log(JSON.stringify({result:'PASS',gridFormats:[4,6,8],knownLocations:['HP94','HP94ad','HP94ad25','IO91wm'],exportRoundTrips:elements.length,checks:['cell centres','case and whitespace normalization','invalid locators','polar/date-line boundaries','TLE columns and checksums preserved','fresh/stale export limits','updated element export']},null,2));

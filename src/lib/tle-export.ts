@@ -7,7 +7,8 @@ export function orbitUsable(element: Element | undefined, now: number): boolean 
 
 // Keep all fixed-width columns, including the original checksums.
 // The HT orbital entry uses the two element lines; a .tle file includes a name.
-export function exportTLE(element: Element, includeName = false): string {
-  return [...(includeName ? [element.name.replace(/[\r\n]/g, '').trim()] : []),
+// Pass the catalogue name (e.g. AO-123): feeds often carry placeholders such as OBJECT AY.
+export function exportTLE(element: Element, includeName = false, name = element.name): string {
+  return [...(includeName ? [name.replace(/[\r\n]/g, '').trim()] : []),
     element.line1, element.line2].join('\r\n') + '\r\n';
 }
