@@ -37,7 +37,7 @@ npm run build
 npm run preview
 ```
 
-`npm run build` first checks that the interface code is formatted with Prettier; run `npm run format` to fix a failure.
+`npm run build` first checks that the interface code and stylesheet are formatted with Prettier; run `npm run format` to fix a failure.
 
 ## Code layout
 
