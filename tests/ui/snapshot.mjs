@@ -97,6 +97,7 @@ async function open(name, options = {}, time = clockAt, prepare) {
   await page.getByRole('button', { name: 'Show UTC times' }).click(); await snap('36 utc times');
   await page.getByRole('button', { name: 'Reset', exact: true }).click();
   // Jump three minutes into the first listed pass to see the live state.
+  await page.locator('.pass-row').first().click();
   const label = await page.locator('.pass-row').first().getAttribute('aria-label');
   const [h, m] = label.match(/at (\d\d):(\d\d) UTC/).slice(1).map(Number);
   const now = await page.evaluate(() => Date.now());
