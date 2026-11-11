@@ -39,6 +39,8 @@ npm run preview
 
 `npm run build` first checks that the interface code and stylesheet are formatted with Prettier; run `npm run format` to fix a failure.
 
+Design decisions, the reasons behind the defaults and open items are recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md). Read it before changing defaults.
+
 ## Code layout
 
 - `src/App.tsx` holds the page's state and wires the pieces together.
