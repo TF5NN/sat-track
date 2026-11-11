@@ -36,3 +36,26 @@ test('all download failures leave the saved file byte-for-byte unchanged',async(
   assert.equal(await readFile(file,'utf8'),text);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('one core spacecraft without elements does not block the daily update',async()=>{
+ const {mkdtemp,readFile,rm}=await import('node:fs/promises');
+ const {tmpdir}=await import('node:os');const {join}=await import('node:path');const {pathToFileURL}=await import('node:url');
+ const {syncOrbits}=await import('../scripts/sync-orbits.ts');
+ const {elementText}=await import('../src/lib/elements.ts');
+ const core=[25544,27607,43017,61781,59112];
+ const feed=ids=>async url=>String(url).includes('satnogs')?Response.json([]):new Response(elementText(elements.filter(e=>!ids.includes(e.norad))));
+ const dir=await mkdtemp(join(tmpdir(),'sat-track-test-'));
+ const file=pathToFileURL(join(dir,'orbits.json'));
+ try{
+  await syncOrbits({now,datasetPath:file,fetchImpl:feed([59112])});
+  const saved=JSON.parse(await readFile(file,'utf8'));
+  assert(saved.missing.includes(59112),'re-entered spacecraft is recorded as missing');
+  assert(parseBundle(saved,now).elements.some(e=>e.norad===25544),'other spacecraft are still published');
+  const text=await readFile(file,'utf8');
+  // With nothing saved to fall back on, a feed with no core spacecraft at all must not publish.
+  const empty=pathToFileURL(join(dir,'none.json'));
+  await assert.rejects(()=>syncOrbits({now,datasetPath:empty,fetchImpl:feed(core)}),/No core spacecraft/);
+  await assert.rejects(()=>readFile(empty,'utf8'),/ENOENT/);
+  assert.equal(await readFile(file,'utf8'),text);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});

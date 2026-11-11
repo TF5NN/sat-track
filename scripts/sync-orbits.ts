@@ -38,10 +38,13 @@ export async function syncOrbits(options:{now?:number;datasetPath?:URL;fetchImpl
   const backup=amsat.length?[]:await download(fallback);
   if(!successful.length)throw Error('All sources failed; the published dataset is unchanged.');
   const elements=prepareDataset([amsat,satnogs,backup],previous,now);
-  // Do not replace the public file with a partial feed that loses basic planning.
+  // Do not replace the public file with a feed that loses basic planning altogether.
+  // One core spacecraft without elements (re-entry, end of tracking) must not stop the
+  // daily update for the others: it is recorded in `missing` and hidden in the app.
   const core=[25544,27607,43017,61781,59112];
   const lost=core.filter(id=>!elements.some(e=>e.norad===id));
-  if(lost.length)throw Error(`Core spacecraft missing (${lost.join(', ')}); the published dataset is unchanged.`);
+  if(lost.length===core.length)throw Error('No core spacecraft has valid elements; the published dataset is unchanged.');
+  if(lost.length)console.warn(`Core spacecraft without valid elements: ${lost.join(', ')}. Publishing the rest; review the catalogue.`);
   const ids=[...new Set(catalog.map(s=>s.norad))];
   const bundle:OrbitBundle={schemaVersion:1,text:elementText(elements),fetchedAt:new Date(now).toISOString(),provider:successful.map(s=>s.name).sort().join(' + '),sources:successful.sort((a,b)=>a.name.localeCompare(b.name)),missing:ids.filter(id=>!elements.some(e=>e.norad===id))};
   parseBundle(bundle,now);

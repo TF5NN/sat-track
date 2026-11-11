@@ -8,6 +8,7 @@ A small, static amateur-satellite planner designed for the VGC VR-N76 and a 2 m 
 
 - Prompts for Maidenhead (4, 6 or 8 characters) or coordinates on opening. New visitors start with Reykjavík; the last station is remembered in that browser.
 - Calculates passes on the visitor's device with satellite.js / SGP4.
+- Opens on FM voice satellites at a 15° minimum peak, so newcomers see a short list they can work; APRS and SSTV are one Mode change away.
 - Uses one reachable-service set for pass lists, satellite choices, the guide and orbital-data controls. A service needs a remaining modeled operating window in the selected 24/48/72 hours at the selected minimum peak elevation.
 - Separates compatible FM voice / 1200-baud AFSK APRS operation from receive-only APRS and FM SSTV.
 - Shows UTC timing, true bearings, sky paths, frequencies, CTCSS, Doppler guidance and concise source-linked notes.
@@ -43,7 +44,7 @@ The build is ordinary static HTML/CSS/JavaScript in `dist/`. It needs no backend
 - SatNOGS supplementary TLEs: https://db.satnogs.org/api/tle/
 - CelesTrak amateur elements if AMSAT fails: https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle
 
-The updater validates TLE checksums and matching IDs, epoch age, plausible orbital parameters and successful propagation. It resolves followed SatNOGS IDs from the TLE columns and retains the newest valid set per listed spacecraft. Previous valid elements fill gaps in partial downloads. Failed downloads do not overwrite the published dataset. Missing core spacecraft block publication; other missing spacecraft are recorded and hidden in the app.
+The updater validates TLE checksums and matching IDs, epoch age, plausible orbital parameters and successful propagation. It resolves followed SatNOGS IDs from the TLE columns and retains the newest valid set per listed spacecraft. Previous valid elements fill gaps in partial downloads. Failed downloads do not overwrite the published dataset. Publication is blocked only when none of the core spacecraft has valid elements. Any individual spacecraft without valid elements, core or not, is recorded, logged as a warning and hidden in the app, so a re-entered or untracked satellite cannot stop the daily update.
 
 A successful workflow tests, builds, commits `public/data/orbits.json`, and deploys the matching static artifact directly. The bot commit does not need to trigger a second workflow. Only the small curated dataset is sent to visitors. A copy is bundled into the app as a fallback, and the last successful dataset is cached in browser storage.
 
