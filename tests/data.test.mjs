@@ -67,3 +67,35 @@ test('age and plausibility are judged separately, and bundled data loads on a sl
  assert.throws(()=>parseBundle(bundle,now-86400000),'downloads dated in the future are still rejected');
  assert.equal(parseBundle(bundle,Infinity).elements[0].norad,25544,'the bundled copy is accepted whatever the device clock says');
 });
+
+test('AMSAT reception reports are summarised per catalogue service and never block orbits',async()=>{
+ const {mkdtemp,readFile,rm}=await import('node:fs/promises');
+ const {tmpdir}=await import('node:os');const {join}=await import('node:path');const {pathToFileURL}=await import('node:url');
+ const {syncOrbits}=await import('../scripts/sync-orbits.ts');
+ const {elementText}=await import('../src/lib/elements.ts');
+ const {catalog}=await import('../src/lib/catalog.ts');
+ const {activityFor,activityText,parseActivity,summarizeReports}=await import('../src/lib/activity.ts');
+ assert(catalog.every(s=>/^[A-Za-z0-9.-]+_\[[A-Za-z_]+\]$/.test(s.amsat)),'every service names its AMSAT status entry');
+ assert.equal(new Set(catalog.map(s=>s.amsat)).size,catalog.length,'one AMSAT entry per service');
+ const row=(name,report,report_count)=>({name,report,report_count});
+ const summary={meta:{hours:168},data:[row('SO-50_[FM]','Heard',89),row('SO-50_[FM]','Not Heard',3),row('AO-91_[FM]','Not Heard',5),row('AO-91_[FM]','Telemetry Only',2),row('AO-7_[U/v]','Heard',40),row('ISS_[FM]','Heard','many')]};
+ const feed=status=>async url=>String(url).includes('summary.php')?status():String(url).includes('satnogs')?Response.json([]):new Response(elementText(elements));
+ const dir=await mkdtemp(join(tmpdir(),'sat-track-test-'));const file=pathToFileURL(join(dir,'orbits.json'));
+ try{
+  await syncOrbits({now,datasetPath:file,fetchImpl:feed(()=>Response.json(summary))});
+  const saved=JSON.parse(await readFile(file,'utf8'));
+  assert.deepEqual(saved.activity.reports,{'SO-50_[FM]':{heard:89,total:92},'AO-91_[FM]':{heard:0,total:7}},'only catalogue services, only valid counts');
+  const activity=parseActivity(saved.activity),sat=id=>catalog.find(s=>s.id===id);
+  const so=activityFor(sat('so50'),activity,now),ao=activityFor(sat('ao91'),activity,now),quiet=activityFor(sat('po101'),activity,now);
+  assert.deepEqual([so.total,so.percent,so.notHeard,so.days],[92,97,false,7]);assert.equal(activityText(so),'92 AMSAT reports · 97% heard · 7 days');
+  assert(ao.notHeard,'reports exist and none heard: warn');
+  assert(!quiet.notHeard&&quiet.total===0&&activityText(quiet)==='No AMSAT reports in 7 days','silence is unknown, not a warning');
+  assert.equal(activityFor(sat('so50'),activity,now+4*86400000),null,'a summary older than three days is not shown');
+  assert.equal(activityFor(sat('so50'),null,now),null);assert.equal(parseActivity({hours:168}),null);
+  assert.throws(()=>summarizeReports({error:'x'},[],168,now));
+  // The next day AMSAT is down: orbits still publish and yesterday's summary is kept.
+  await syncOrbits({now:now+3600000,datasetPath:file,fetchImpl:feed(()=>new Response('Unavailable',{status:503}))});
+  const next=JSON.parse(await readFile(file,'utf8'));
+  assert.equal(next.fetchedAt,new Date(now+3600000).toISOString());assert.deepEqual(next.activity,saved.activity);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});

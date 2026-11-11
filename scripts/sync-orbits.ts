@@ -3,6 +3,7 @@ import { catalog, sources } from '../src/lib/catalog.ts';
 import { parseTLE, type Element } from '../src/lib/orbit.ts';
 import { parseSatnogs, mergeElements, elementText } from '../src/lib/elements.ts';
 import { validOrbit, parseBundle, type OrbitBundle } from '../src/lib/orbital-data.ts';
+import { summarizeReports, parseActivity, ACTIVITY_HOURS, type Activity } from '../src/lib/activity.ts';
 
 export const feeds = [
   {name:'AMSAT',url:sources.tle,json:false},
@@ -17,8 +18,8 @@ export function prepareDataset(groups: Element[][], previous: Element[], now: nu
 export async function syncOrbits(options:{now?:number;datasetPath?:URL;fetchImpl?:typeof fetch}={}) {
   const now=options.now??Date.now(), path=options.datasetPath??new URL('../public/data/orbits.json',import.meta.url);
   const request=options.fetchImpl??fetch;
-  let previous:Element[]=[];
-  try { previous=parseBundle(JSON.parse(await readFile(path,'utf8')),now).elements; } catch { /* Initial publication has no saved file. */ }
+  let previous:Element[]=[],activity:Activity|null=null;
+  try { const saved=parseBundle(JSON.parse(await readFile(path,'utf8')),now);previous=saved.elements;activity=parseActivity(saved.bundle.activity); } catch { /* Initial publication has no saved file. */ }
   const successful:OrbitBundle['sources']=[];
   async function download(feed:typeof fallback) {
     try {
@@ -45,13 +46,22 @@ export async function syncOrbits(options:{now?:number;datasetPath?:URL;fetchImpl
   const lost=core.filter(id=>!elements.some(e=>e.norad===id));
   if(lost.length===core.length)throw Error('No core spacecraft has valid elements; the published dataset is unchanged.');
   if(lost.length)console.warn(`Core spacecraft without valid elements: ${lost.join(', ')}. Publishing the rest; review the catalogue.`);
+  // Reception reports are a bonus: a failed or odd response keeps the previous summary
+  // and never stops the orbital update.
+  try {
+    const response=await request(`${sources.statusSummary}?hours=${ACTIVITY_HOURS}`,{signal:AbortSignal.timeout(20000),headers:{Accept:'application/json','User-Agent':'TF5NN-sat-track/1.0 (https://github.com/TF5NN/sat-track)'}});
+    if(!response.ok)throw Error(`HTTP ${response.status}`);
+    activity=summarizeReports(await response.json(),catalog.flatMap(s=>s.amsat?[s.amsat]:[]),ACTIVITY_HOURS,now);
+  } catch(error) {
+    console.warn(`AMSAT status: ${error instanceof Error?error.message:'download failed'}. Keeping the previous report summary.`);
+  }
   const ids=[...new Set(catalog.map(s=>s.norad))];
-  const bundle:OrbitBundle={schemaVersion:1,text:elementText(elements),fetchedAt:new Date(now).toISOString(),provider:successful.map(s=>s.name).sort().join(' + '),sources:successful.sort((a,b)=>a.name.localeCompare(b.name)),missing:ids.filter(id=>!elements.some(e=>e.norad===id))};
+  const bundle:OrbitBundle={schemaVersion:1,text:elementText(elements),fetchedAt:new Date(now).toISOString(),provider:successful.map(s=>s.name).sort().join(' + '),sources:successful.sort((a,b)=>a.name.localeCompare(b.name)),missing:ids.filter(id=>!elements.some(e=>e.norad===id)),...(activity?{activity}:{})};
   parseBundle(bundle,now);
   const temporary=new URL('orbits.json.tmp',path);
   await writeFile(temporary,JSON.stringify(bundle,null,2)+'\n');
   await rename(temporary,path);
-  console.log(JSON.stringify({result:'PASS',spacecraft:elements.length,missing:bundle.missing,providers:bundle.provider,fetchedAt:bundle.fetchedAt}));
+  console.log(JSON.stringify({result:'PASS',reportSummary:activity?.fetchedAt??null,spacecraft:elements.length,missing:bundle.missing,providers:bundle.provider,fetchedAt:bundle.fetchedAt}));
 }
 if(process.argv[1]&&import.meta.url===new URL(process.argv[1],'file:').href) {
   syncOrbits().catch(error=>{console.error(error.message);process.exitCode=1;});
