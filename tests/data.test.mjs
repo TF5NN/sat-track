@@ -78,17 +78,19 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
  assert(catalog.every(s=>/^[A-Za-z0-9.-]+_\[[A-Za-z_]+\]$/.test(s.amsat)),'every service names its AMSAT status entry');
  assert.equal(new Set(catalog.map(s=>s.amsat)).size,catalog.length,'one AMSAT entry per service');
  const row=(name,report,report_count)=>({name,report,report_count});
- const summary={meta:{hours:168},data:[row('SO-50_[FM]','Heard',89),row('SO-50_[FM]','Not Heard',3),row('AO-91_[FM]','Not Heard',5),row('AO-91_[FM]','Telemetry Only',2),row('AO-7_[U/v]','Heard',40),row('ISS_[FM]','Heard','many')]};
+ const summary={meta:{hours:168},data:[row('SO-50_[FM]','Heard',89),row('SO-50_[FM]','Not Heard',3),row('AO-91_[FM]','Not Heard',5),row('AO-91_[FM]','Telemetry Only',2),row('RS18S_[SSTV]','Not Heard',2),row('AO-7_[U/v]','Heard',40),row('ISS_[FM]','Heard','many')]};
  const feed=status=>async url=>String(url).includes('summary.php')?status():String(url).includes('satnogs')?Response.json([]):new Response(elementText(elements));
  const dir=await mkdtemp(join(tmpdir(),'sat-track-test-'));const file=pathToFileURL(join(dir,'orbits.json'));
  try{
   await syncOrbits({now,datasetPath:file,fetchImpl:feed(()=>Response.json(summary))});
   const saved=JSON.parse(await readFile(file,'utf8'));
-  assert.deepEqual(saved.activity.reports,{'SO-50_[FM]':{heard:89,total:92},'AO-91_[FM]':{heard:0,total:7}},'only catalogue services, only valid counts');
+  assert.deepEqual(saved.activity.reports,{'SO-50_[FM]':{heard:89,total:92},'AO-91_[FM]':{heard:0,total:7},'RS18S_[SSTV]':{heard:0,total:2}},'only catalogue services, only valid counts');
   const activity=parseActivity(saved.activity),sat=id=>catalog.find(s=>s.id===id);
   const so=activityFor(sat('so50'),activity,now),ao=activityFor(sat('ao91'),activity,now),quiet=activityFor(sat('po101'),activity,now);
   assert.deepEqual([so.total,so.percent,so.notHeard,so.days],[92,97,false,7]);assert.equal(activityText(so),'92 AMSAT reports · 97% heard · 7 days');
-  assert(ao.notHeard,'reports exist and none heard: warn');
+  assert(ao.notHeard,'three or more reports and none heard: warn');
+  const few=activityFor(sat('rs18'),activity,now);assert(!few.notHeard&&few.total===2&&few.percent===0,'fewer than three reports never warn');
+  const {uncertain}=await import('../src/lib/catalog.ts');assert(uncertain(sat('ao91')),'AO-91 is listed with the uncertain repeaters');
   assert(!quiet.notHeard&&quiet.total===0&&activityText(quiet)==='No AMSAT reports in 7 days','silence is unknown, not a warning');
   assert.equal(activityFor(sat('so50'),activity,now+4*86400000),null,'a summary older than three days is not shown');
   assert.equal(activityFor(sat('so50'),null,now),null);assert.equal(parseActivity({hours:168}),null);

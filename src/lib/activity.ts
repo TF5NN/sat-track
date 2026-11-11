@@ -10,6 +10,8 @@ export type Activity = {
 // The look-back window. Seven days gives quiet satellites enough reports to judge,
 // while a service that stopped working still shows up within the week.
 export const ACTIVITY_HOURS = 168;
+// Fewest reports, none of them "Heard", before a service is flagged as not heard recently.
+export const NOT_HEARD_MIN_REPORTS = 3;
 const DAY = 86400000;
 
 // Reduce AMSAT's summary response to heard / total counts for the catalogue's services.
@@ -47,7 +49,7 @@ export function activityFor(sat: Satellite, activity: Activity | null, now: numb
   if (age > 3 * DAY || age < -DAY) return null;
   const { heard, total } = activity.reports[sat.amsat] ?? { heard: 0, total: 0 };
   return { total, heard, percent: total ? Math.round(heard / total * 100) : null,
-    days: Math.round(activity.hours / 24), notHeard: total > 0 && heard === 0 };
+    days: Math.round(activity.hours / 24), notHeard: total >= NOT_HEARD_MIN_REPORTS && heard === 0 };
 }
 export const activityText = (a: ActivityView) => a.total === 0
   ? `No AMSAT reports in ${a.days} days`

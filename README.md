@@ -10,7 +10,7 @@ A small, static amateur-satellite planner designed for the VGC VR-N76 and a 2 m 
 - Calculates passes on the visitor's device with satellite.js / SGP4.
 - Opens on the services the station can work (FM voice and APRS) from a 5° peak; receive-only services are one tap away under All / Listen.
 - Shows pass times in device-local time with UTC alongside, with a switch to UTC; the choice is remembered.
-- Shows AMSAT reception reports for each service (report count and % heard over 7 days) and warns when a service has reports but none heard it.
+- Shows AMSAT reception reports for each service (report count and % heard over 7 days) and warns when a service has at least three reports and none heard it.
 - Lists Doppler settings as 5 kHz radio steps, only as many as the pass needs (retune when the drift passes 3.5 kHz).
 - Uses one reachable-service set for pass lists, satellite choices, the guide and orbital-data controls. A service needs a remaining modeled operating window in the selected 24/48/72 hours at the selected minimum peak elevation.
 - Separates compatible FM voice / 1200-baud AFSK APRS operation from receive-only APRS and FM SSTV.
