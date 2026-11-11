@@ -5,3 +5,5 @@ dist/
 .DS_Store
 .openai/
 .sites-runtime/
+tests/ui/.snapshot.json
+tests/ui/.shots/
