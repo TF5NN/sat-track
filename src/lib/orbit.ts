@@ -52,6 +52,26 @@ export function doppler(rec:SatRec,time:number,station:Station,up:number|null,do
   const rate=p&&n?n.range-p.range:0; // km/s, positive receding; includes rotating observer
   return { rx:down*(1-rate/299792.458),tx:up===null?null:up*(1+rate/299792.458),rate };
 }
+export type TuningStep = { time: number; rx: number; tx: number | null };
+// Radio settings for a pass: the fewest retunes, on a `stepKHz` grid around the nominal
+// frequencies, that keep the radio within `toleranceKHz` of the Doppler-shifted signal.
+// Low passes and 2 m links drift less, so they get fewer settings (often just one).
+export function tuningSteps(rec:SatRec,station:Station,up:number|null,down:number,start:number,end:number,stepKHz=5,toleranceKHz=3.5):TuningStep[] {
+  const count=Math.max(1,Math.ceil((end-start)/1000));
+  const samples=Array.from({length:count+1},(_,i)=>{const time=start+(end-start)*i/count,d=doppler(rec,time,station,up,down);return {time,rx:(d.rx-down)*1000,tx:d.tx===null||up===null?null:(d.tx-up)*1000};});
+  // Stay on a channel while it is within tolerance; then jump as far ahead of the drift as tolerance allows.
+  const channel=(offset:number,previous:number|null,falling:boolean)=>previous!==null&&Math.abs(offset-previous)<=toleranceKHz+1e-9?previous
+    :(falling?Math.ceil((offset-toleranceKHz)/stepKHz):Math.floor((offset+toleranceKHz)/stepKHz))*stepKHz;
+  const first=samples[0],last=samples[count],mhz=(nominal:number,offset:number)=>Math.round(nominal*1000+offset)/1000;
+  const steps:TuningStep[]=[];let rx:number|null=null,tx:number|null=null;
+  for(const s of samples) {
+    const nextRx:number=channel(s.rx,rx,last.rx<=first.rx);
+    const nextTx:number|null=s.tx===null?null:channel(s.tx,tx,last.tx!<=first.tx!);
+    if(nextRx!==rx||nextTx!==tx)steps.push({time:s.time,rx:mhz(down,nextRx),tx:nextTx===null||up===null?null:mhz(up,nextTx)});
+    rx=nextRx;tx=nextTx;
+  }
+  return steps;
+}
 export function usableAt(sat:Satellite,time:number,sun:boolean):boolean {
   if(sat.daylight&&!sun) return false;
   if(sat.event&&(time<Date.parse(sat.event.start)||time>=Date.parse(sat.event.end))) return false;
