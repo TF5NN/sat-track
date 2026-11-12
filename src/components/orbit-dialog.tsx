@@ -4,6 +4,7 @@ import { Copy, Download, RefreshCw, X, ArrowUpRight } from 'lucide-react';
 import { frequency, sources, type Satellite } from '../lib/catalog';
 import type { Element } from '../lib/orbit';
 import { exportTLE, orbitUsable } from '../lib/tle-export';
+import { countUse } from '../lib/usage';
 
 export const htManual = 'https://us03-imgcdn.ymcart.com/91076/2026/04/22/7/9/799f98e322bb1645.pdf#page=36';
 const utc = (time: number) =>
@@ -53,6 +54,7 @@ export default function OrbitDialog({
   }
   function download() {
     if (!element || !usable) return;
+    countUse('download-tle');
     const link = document.createElement('a');
     const url = URL.createObjectURL(
       new Blob([exportTLE(element, true, sat.name)], { type: 'text/plain;charset=utf-8' }),

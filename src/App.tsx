@@ -24,6 +24,7 @@ import {
   type Station,
 } from './lib/orbit';
 import { dateYear, makeClock } from './lib/time';
+import { countUse } from './lib/usage';
 import { reachableCatalog, localizePasses, hiddenEvents } from './lib/visibility';
 
 export default function Home() {
@@ -222,6 +223,7 @@ export default function Home() {
           now={now}
           activity={activity}
           onShow={(sat) => {
+            countUse('event-show-passes');
             setFilters({ ...defaults, status: 'all', elevation: filters.elevation, satellite: sat.id });
             setTab('passes');
           }}

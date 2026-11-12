@@ -18,6 +18,7 @@ import { createPassCalendar } from '../lib/calendar';
 import { band, frequency, sources } from '../lib/catalog';
 import { compass, doppler, pointAt, tuningSteps, type Pass, type Station } from '../lib/orbit';
 import { offsetLabel, utcDate, utcTime, type Clock } from '../lib/time';
+import { countUse } from '../lib/usage';
 
 function ics(pass: Pass, station: Station) {
   const tuning = tuningSteps(
@@ -247,7 +248,13 @@ export default function PassDetail({
         <span>Same daily orbital data as the predictions</span>
       </div>
       <div className="detail-actions">
-        <button className="button" onClick={() => ics(pass, station)}>
+        <button
+          className="button"
+          onClick={() => {
+            countUse('save-pass');
+            ics(pass, station);
+          }}
+        >
           <Download size={14} /> Save pass
         </button>
         <a className="text-link" href={sources.status} target="_blank" rel="noreferrer">

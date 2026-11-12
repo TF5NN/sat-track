@@ -89,6 +89,8 @@ A later personal-site domain can retain `/sat-track/`; changing the hostname doe
 
 ## Data and privacy
 
-Station coordinates and pass calculations stay in the browser. The shared data-file request contains no station coordinates. No analytics, GPS permission or authentication are used. The stylesheet loads DM Sans and IBM Plex Mono from Google Fonts, with local fallback fonts.
+Station coordinates and pass calculations stay in the browser. The shared data-file request contains no station coordinates. No GPS permission or authentication are used.
+
+Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com/) (site code `tf5nn`, private dashboard): page opens by country and referring site, plus three actions (`save-pass`, `event-show-passes`, `download-tle`). No cookies are set and nothing about the station is sent. The counter script loads separately from the app, so the planner works the same if it is blocked. Local previews are not counted. To leave your own visits out, open the app once with `#toggle-goatcounter` at the end of the address in each browser you use. The stylesheet loads DM Sans and IBM Plex Mono from Google Fonts, with local fallback fonts.
 
 Orbital and frequency data come from the linked providers and operators; their acknowledgements and applicable terms remain separate from this application's source. Source publication does not imply that all satellite payloads are currently active. Bearings assume a clear horizon; terrain, refraction and obstructions are not modeled.
