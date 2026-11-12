@@ -122,6 +122,14 @@ async function open(name, options = {}, time = clockAt, prepare) {
   await page.getByRole('button', { name: 'Satellite guide' }).click(); await snap('04 guide');
   await close();
 }
+// ---- Event banner: a dated event hidden by the Work view
+{
+  const { page, snap, tick, close } = await open('event');
+  await page.getByRole('button', { name: /Use this location/ }).click(); await tick(1000); await snap('01 banner in work view');
+  await page.getByRole('button', { name: 'Satellite guide' }).click(); await snap('02 banner on guide');
+  await page.locator('.event-banner').getByRole('button', { name: 'Show passes' }).click(); await snap('03 show passes from banner');
+  await close();
+}
 // ---- Device clock two days behind the data
 {
   const { page, snap, tick, close } = await open('slow clock', {}, fetchedAt - 2 * 86400000);

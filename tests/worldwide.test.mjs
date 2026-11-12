@@ -2,7 +2,7 @@ import {strict as assert} from 'node:assert';
 import {readFileSync} from 'node:fs';
 import {catalog} from '../src/lib/catalog.ts';
 import {parseTLE,predict,defaultStation,noradNumber} from '../src/lib/orbit.ts';
-import {reachableCatalog,localizePasses} from '../src/lib/visibility.ts';
+import {reachableCatalog,localizePasses,hiddenEvents} from '../src/lib/visibility.ts';
 import {parseSatnogs,mergeElements,elementText} from '../src/lib/elements.ts';
 import {createPassCalendar} from '../src/lib/calendar.ts';
 const now=Date.parse('2026-11-10T14:00:00Z');
@@ -23,6 +23,12 @@ for(const [name,station] of Object.entries(stations)){
  const localizedISS=passes.find(p=>p.sat.id==='iss-fm');
  if(name==='Reykjavik')assert(localizedISS.sat.notes.includes('clear southern horizon'));
  if(name==='London'||name==='Jakarta')assert(!localizedISS.sat.notes.includes('From this station'));
+ const banner=hiddenEvents(available,passes,'work',now,5);
+ assert(banner.every(e=>e.sat.event&&e.sat.access==='listen'&&e.count>0&&ids.includes(e.sat.id)),'banner lists only reachable dated events the Work view hides');
+ assert.equal(banner.some(e=>e.sat.id==='iss-sstv'),ids.includes('iss-sstv'),'a reachable ISS SSTV event is announced, an unreachable one is not');
+ assert.deepEqual(hiddenEvents(available,passes,'all',now,5),[]);assert.deepEqual(hiddenEvents(available,passes,'listen',now,5),[],'no banner when the passes are already listed');
+ assert.deepEqual(hiddenEvents(available,passes,'work',Date.parse('2026-11-16T08:15:00Z'),5),[],'gone once the event has ended');
+ summary[name].event=banner.map(e=>`${e.sat.id}:${e.count}`).join(',');
  const stale=predict(elements,catalog,station,now+10*86400000,24);
  assert.equal(reachableCatalog(catalog,stale.passes,now+10*86400000,0).length,0);
  if(name==='Reykjavik'){
@@ -34,6 +40,7 @@ for(const [name,station] of Object.entries(stations)){
 assert(summary.Jakarta.io86,'equatorial FM satellite is offered where reachable');
 for(const name of ['Reykjavik','London','Sydney','Arctic','Antarctic'])assert(!summary[name].io86,`IO-86 hidden in ${name}`);
 assert(!summary.Arctic.iss&&!summary.Antarctic.iss,'ISS hidden beyond footprint');
+assert(summary.London.event.startsWith('iss-sstv:')&&summary.Reykjavik.event.startsWith('iss-sstv:')&&summary.Arctic.event===''&&summary.Antarctic.event==='','event banner follows the footprint');
 assert.equal(catalog.find(s=>s.id==='no44').up,null,'NO-44 recovery restriction respected');
 const io=elements.find(e=>e.norad===40931);assert(now-io.epoch<7*86400000,'fresh supplementary IO-86 elements replace stale AMSAT set');
 const followed=elements.find(e=>e.norad===67284);

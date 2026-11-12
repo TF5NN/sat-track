@@ -2557,3 +2557,39 @@ footer > button {
 .not-heard strong {
   font-weight: 600;
 }
+.event-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #cfe0cf;
+  background: var(--green-soft);
+  padding: 12px 14px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  color: #3f6b55;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.event-banner > svg {
+  color: var(--green);
+}
+.event-banner strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+.event-banner > button {
+  margin-left: auto;
+  white-space: nowrap;
+  text-decoration: underline;
+  font-size: 10px;
+}
+@media (max-width: 720px) {
+  .event-banner {
+    font-size: 10px;
+    align-items: flex-start;
+    gap: 7px;
+  }
+  .event-banner > button {
+    font-size: 9px;
+  }
+}

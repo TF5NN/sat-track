@@ -10,6 +10,7 @@ A small, static amateur-satellite planner designed for the VGC VR-N76 and a 2 m 
 - Calculates passes on the visitor's device with satellite.js / SGP4.
 - Opens on the services the station can work (FM voice and APRS) from a 5° peak; receive-only services are one tap away under All / Listen.
 - Shows pass times in device-local time with UTC alongside, with a switch to UTC; the choice is remembered.
+- Announces a dated event (such as an ISS SSTV week) in a banner on both tabs when it is reachable but hidden by the Work view; the banner disappears when the event ends.
 - Shows AMSAT reception reports for each service (report count and % heard over 7 days) and warns when a service has at least three reports and none heard it.
 - Lists Doppler settings as 5 kHz radio steps, only as many as the pass needs (retune when the drift passes 3.5 kHz).
 - Uses one reachable-service set for pass lists, satellite choices, the guide and orbital-data controls. A service needs a remaining modeled operating window in the selected 24/48/72 hours at the selected minimum peak elevation.
@@ -48,7 +49,7 @@ Design decisions, the reasons behind the defaults and open items are recorded in
 - `src/hooks/` loads and refreshes the orbital data and handles keyboard focus inside dialogs.
 - `src/lib/` is the calculation and data code (orbits, catalogue, time formatting, AMSAT reports, calendar and TLE export), covered by `npm test`.
 
-`npm run test:ui -- write` records the built app's HTML across 52 steps (dialogs, filters, a live pass, phone layout, clock and data warnings) with a frozen clock; `npm run test:ui -- check` compares a later build against it. Use it around changes that must not alter the page. It needs Playwright with Chromium and is not part of `npm test` or CI.
+`npm run test:ui -- write` records the built app's HTML across 55 steps (dialogs, filters, a live pass, phone layout, clock and data warnings) with a frozen clock; `npm run test:ui -- check` compares a later build against it. Use it around changes that must not alter the page. It needs Playwright with Chromium and is not part of `npm test` or CI.
 
 The build is ordinary static HTML/CSS/JavaScript in `dist/`. It needs no backend, accounts, database or runtime secrets.
 

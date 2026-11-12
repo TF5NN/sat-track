@@ -38,6 +38,7 @@ from the operator's location. Working with other radios is a bonus, not the obje
 | Time window for AMSAT reports | 7 days | 1–3 days is too thin for quiet satellites; 14–30 days hides recent failures |
 | When to show "Not heard recently" | At least 3 reports and none heard | No reports at all is shown quietly, not as a warning |
 | AO-91 (0 of 7 heard) | Move under uncertain repeaters | Hidden by default |
+| A running ISS SSTV event was invisible in the default Work view | Announce it in a banner, on the guide tab too | Banner per dated event that is reachable but hidden by the filter; "Show passes" switches to it. Event dates are still entered by hand in the catalogue |
 | Larger text and more contrast | Rejected, readable as is | Unchanged |
 | Replace jargon (AOS, TCA, CTCSS, TLE) with plain words | Rejected | Unchanged |
 | Show Doppler as radio steps instead of 5 decimals | Accepted, and it should show only as many steps as the pass needs | 5 kHz steps, retuned only when drift passes 3.5 kHz; also written into the calendar export |

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, Satellite as SatelliteIcon } from 'lucide-react';
 import DataStatus from './components/data-status';
+import EventBanner from './components/event-banner';
 import FiltersPanel from './components/filters';
 import Guide from './components/guide';
 import Intro from './components/intro';
@@ -23,7 +24,7 @@ import {
   type Station,
 } from './lib/orbit';
 import { dateYear, makeClock } from './lib/time';
-import { reachableCatalog, localizePasses } from './lib/visibility';
+import { reachableCatalog, localizePasses, hiddenEvents } from './lib/visibility';
 
 export default function Home() {
   const modalRef = useRef<HTMLElement>(null);
@@ -186,6 +187,10 @@ export default function Home() {
     } catch {}
     setEditing(false);
   }
+  const events = useMemo(
+    () => hiddenEvents(availableCatalog, result.passes, filters.status, now, filters.elevation),
+    [availableCatalog, result.passes, filters.status, now, filters.elevation],
+  );
   const orbitSat = availableCatalog.find((s) => s.id === orbitSatId);
   return (
     <div className="app-shell">
@@ -210,6 +215,16 @@ export default function Home() {
           now={now}
           oldest={oldest}
           publicationAge={publicationAge}
+        />
+        <EventBanner
+          events={events}
+          hours={hours}
+          now={now}
+          activity={activity}
+          onShow={(sat) => {
+            setFilters({ ...defaults, status: 'all', elevation: filters.elevation, satellite: sat.id });
+            setTab('passes');
+          }}
         />
         <div className={`workspace ${tab === 'guide' ? 'guide-layout' : ''}`}>
           <FiltersPanel
