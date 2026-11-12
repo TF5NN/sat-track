@@ -1,4 +1,3 @@
-'use client';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Copy, Download, RefreshCw, X, ArrowUpRight } from 'lucide-react';
 import { frequency, sources, type Satellite } from '../lib/catalog';

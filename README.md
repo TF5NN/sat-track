@@ -38,7 +38,7 @@ npm run build
 npm run preview
 ```
 
-`npm run build` first checks that the interface code and stylesheet are formatted with Prettier; run `npm run format` to fix a failure.
+`npm run build` first checks that the source, scripts, tests and stylesheet are formatted with Prettier; run `npm run format` to fix a failure.
 
 Design decisions, the reasons behind the defaults and open items are recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md). Read it before changing defaults.
 
@@ -94,3 +94,7 @@ Station coordinates and pass calculations stay in the browser. The shared data-f
 Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com/) (site code `tf5nn`, private dashboard): page opens by country and referring site, plus three actions (`save-pass`, `event-show-passes`, `download-tle`). No cookies are set and nothing about the station is sent. The counter script loads separately from the app, so the planner works the same if it is blocked. Local previews are not counted. To leave your own visits out, open the app once with `#toggle-goatcounter` at the end of the address in each browser you use. The stylesheet loads DM Sans and IBM Plex Mono from Google Fonts, with local fallback fonts.
 
 Orbital and frequency data come from the linked providers and operators; their acknowledgements and applicable terms remain separate from this application's source. Source publication does not imply that all satellite payloads are currently active. Bearings assume a clear horizon; terrain, refraction and obstructions are not modeled.
+
+## License
+
+Creative Commons Attribution 4.0 International (CC BY 4.0), the same licence as the HF Antenna Impedance Visualizer. See [`LICENSE`](LICENSE). Orbital elements, frequency information and AMSAT reception reports belong to their providers and keep their own terms.

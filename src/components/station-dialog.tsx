@@ -1,4 +1,3 @@
-'use client';
 import { useState, type RefObject } from 'react';
 import { Check, MapPin, X } from 'lucide-react';
 import { parseLocator, locatorFor } from '../lib/locator';

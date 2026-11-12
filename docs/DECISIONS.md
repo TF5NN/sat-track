@@ -47,6 +47,7 @@ from the operator's location. Working with other radios is a bonus, not the obje
 | Make the wording radio-neutral | Rejected, the app is made for the VR-N76 | Unchanged |
 | Offline / installable app | Rejected, out of scope | "Save pass" already exports what is needed to a calendar |
 | Reformat and split `src/App.tsx` | Accepted | Split into components, hooks and time helpers; page proven identical |
+| Format the calculation, script and test files; update build tools; add a licence | Accepted | All source is under the format check, the built bundle was byte-identical after formatting, `npm audit` reports no issues, licence is CC BY 4.0 as for the antenna tool |
 | Reformat `src/style.css` | Accepted | Reformatted only, rules not reordered; page proven pixel-identical |
 
 ## Settings worth knowing
