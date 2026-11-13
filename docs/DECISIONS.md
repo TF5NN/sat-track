@@ -37,6 +37,7 @@ from the operator's location. Working with other radios is a bonus, not the obje
 | Pull AMSAT's reception reports once a day | Accepted after scoping | One request a day, 7-day window, shown per satellite, AMSAT credited (CC BY 4.0) |
 | Time window for AMSAT reports | 7 days | 1–3 days is too thin for quiet satellites; 14–30 days hides recent failures |
 | When to show "Not heard recently" | At least 3 reports and none heard | No reports at all is shown quietly, not as a warning |
+| Warn on a low share too (AO-91 lost its warning at 1 of 8 heard) | Yes, below 50% | "Rarely heard" when at least 3 reports and fewer than half heard it; "Not heard recently" stays for none |
 | AO-91 (0 of 7 heard) | Move under uncertain repeaters | Hidden by default |
 | A running ISS SSTV event was invisible in the default Work view | Announce it in a banner, on the guide tab too | Banner per dated event that is reachable but hidden by the filter; "Show passes" switches to it. Event dates are still entered by hand in the catalogue |
 | Count visitors, to know whether publishing is worth it | GoatCounter, site code `tf5nn`, private dashboard, no visible counter | Page opens are counted, since reading the page is already using it, plus pass saves, banner clicks and orbit downloads. Flag Counter was considered and not used |
@@ -56,7 +57,8 @@ from the operator's location. Working with other radios is a bonus, not the obje
 |---|---|---|
 | Default filters | Work, all modes, 5° | `defaultFilters` in `src/lib/orbit.ts` |
 | AMSAT report window | 7 days (168 hours) | `ACTIVITY_HOURS` in `src/lib/activity.ts` |
-| Reports needed for a "not heard" warning | 3 | `NOT_HEARD_MIN_REPORTS` in `src/lib/activity.ts` |
+| Reports needed for a warning | 3 | `WARNING_MIN_REPORTS` in `src/lib/activity.ts` |
+| "Rarely heard" threshold | below 50% heard | `RARELY_HEARD_BELOW` in `src/lib/activity.ts` |
 | AMSAT numbers hidden when older than | 3 days | `activityFor` in `src/lib/activity.ts` |
 | Doppler step and tolerance | 5 kHz, 3.5 kHz | `tuningSteps` in `src/lib/orbit.ts` |
 | Pass recalculation | every 10 minutes | `src/App.tsx` |

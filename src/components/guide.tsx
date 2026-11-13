@@ -92,8 +92,8 @@ export default function Guide({
                 </p>
                 {((a) =>
                   a && (
-                    <p className={`activity ${a.notHeard ? 'warn' : ''}`}>
-                      {a.notHeard ? 'Not heard recently · ' : ''}
+                    <p className={`activity ${a.warning ? 'warn' : ''}`}>
+                      {a.warning ? `${a.warning} · ` : ''}
                       {activityText(a)}
                     </p>
                   ))(activityFor(s, activity, now))}

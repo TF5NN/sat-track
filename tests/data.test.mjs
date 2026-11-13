@@ -154,6 +154,10 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
       row('AO-91_[FM]', 'Not Heard', 5),
       row('AO-91_[FM]', 'Telemetry Only', 2),
       row('RS18S_[SSTV]', 'Not Heard', 2),
+      row('RS40S_[SSTV]', 'Heard', 6),
+      row('RS40S_[SSTV]', 'Telemetry Only', 12),
+      row('RS38S_[SSTV]', 'Heard', 2),
+      row('RS38S_[SSTV]', 'Not Heard', 2),
       row('AO-7_[U/v]', 'Heard', 40),
       row('ISS_[FM]', 'Heard', 'many'),
     ],
@@ -175,6 +179,8 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
         'SO-50_[FM]': { heard: 89, total: 92 },
         'AO-91_[FM]': { heard: 0, total: 7 },
         'RS18S_[SSTV]': { heard: 0, total: 2 },
+        'RS40S_[SSTV]': { heard: 6, total: 18 },
+        'RS38S_[SSTV]': { heard: 2, total: 4 },
       },
       'only catalogue services, only valid counts',
     );
@@ -183,15 +189,17 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
     const so = activityFor(sat('so50'), activity, now),
       ao = activityFor(sat('ao91'), activity, now),
       quiet = activityFor(sat('po101'), activity, now);
-    assert.deepEqual([so.total, so.percent, so.notHeard, so.days], [92, 97, false, 7]);
+    assert.deepEqual([so.total, so.percent, so.warning, so.days], [92, 97, null, 7]);
     assert.equal(activityText(so), '92 AMSAT reports · 97% heard · 7 days');
-    assert(ao.notHeard, 'three or more reports and none heard: warn');
+    assert.equal(ao.warning, 'Not heard recently', 'three or more reports and none heard');
+    assert.equal(activityFor(sat('rs40'), activity, now).warning, 'Rarely heard', '6 of 18 is under half');
+    assert.equal(activityFor(sat('rs38'), activity, now).warning, null, 'exactly half is not a warning');
     const few = activityFor(sat('rs18'), activity, now);
-    assert(!few.notHeard && few.total === 2 && few.percent === 0, 'fewer than three reports never warn');
+    assert(!few.warning && few.total === 2 && few.percent === 0, 'fewer than three reports never warn');
     const { uncertain } = await import('../src/lib/catalog.ts');
     assert(uncertain(sat('ao91')), 'AO-91 is listed with the uncertain repeaters');
     assert(
-      !quiet.notHeard && quiet.total === 0 && activityText(quiet) === 'No AMSAT reports in 7 days',
+      !quiet.warning && quiet.total === 0 && activityText(quiet) === 'No AMSAT reports in 7 days',
       'silence is unknown, not a warning',
     );
     assert.equal(

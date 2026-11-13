@@ -81,9 +81,10 @@ export default function SourcesDialog({ data, now, result, modalRef, setSourceOp
         <p>
           The small report line on each service counts operator reports sent to AMSAT’s status page
           (status.amsat.org, licensed CC BY 4.0) over the last 7 days and the share that heard the service. It
-          is collected once a day with the orbital data. A “not heard recently” warning means at least three
-          reports exist and none heard it. Reports are voluntary and worldwide: no reports does not mean a
-          satellite is off, and a good figure does not promise it is on during your pass.
+          is collected once a day with the orbital data. A warning needs at least three reports: “not heard
+          recently” means none of them heard it, “rarely heard” means fewer than half did. Reports are
+          voluntary and worldwide: no reports does not mean a satellite is off, and a good figure does not
+          promise it is on during your pass.
         </p>
         <h3>Which satellites appear</h3>
         <p>

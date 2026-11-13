@@ -133,8 +133,8 @@ export default function PassList({
                   </small>
                   {((a) =>
                     a && (
-                      <small className={`activity ${a.notHeard ? 'warn' : ''}`}>
-                        {a.notHeard ? '⚠ Not heard recently · ' : ''}
+                      <small className={`activity ${a.warning ? 'warn' : ''}`}>
+                        {a.warning ? `⚠ ${a.warning} · ` : ''}
                         {activityText(a)}
                       </small>
                     ))(activityFor(p.sat, activity, now))}

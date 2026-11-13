@@ -208,12 +208,12 @@ export default function PassDetail({
           changes and 2 m rarely needs any. HT app Doppler control is available with compatible firmware.
         </p>
       </div>
-      {heard?.notHeard && (
+      {heard?.warning && (
         <div className="not-heard" role="note">
           <Info size={15} />
           <p>
-            <strong>Not heard recently.</strong> None of the {heard.total} AMSAT report
-            {heard.total === 1 ? '' : 's'} in the last {heard.days} days heard this service. Listen before you
+            <strong>{heard.warning}.</strong> {heard.heard === 0 ? 'None' : `Only ${heard.heard}`} of the{' '}
+            {heard.total} AMSAT reports in the last {heard.days} days heard this service. Listen before you
             plan around it.
           </p>
         </div>

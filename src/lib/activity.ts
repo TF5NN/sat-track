@@ -11,8 +11,12 @@ export type Activity = {
 // The look-back window. Seven days gives quiet satellites enough reports to judge,
 // while a service that stopped working still shows up within the week.
 export const ACTIVITY_HOURS = 168;
-// Fewest reports, none of them "Heard", before a service is flagged as not heard recently.
-export const NOT_HEARD_MIN_REPORTS = 3;
+// A service is flagged only when it has at least this many reports in the window, so one
+// stray report on a quiet satellite cannot trigger a warning.
+export const WARNING_MIN_REPORTS = 3;
+// Flagged as "Rarely heard" when fewer than this share of its reports heard it
+// (and as "Not heard recently" when none did).
+export const RARELY_HEARD_BELOW = 0.5;
 const DAY = 86400000;
 
 // Reduce AMSAT's summary response to heard / total counts for the catalogue's services.
@@ -61,7 +65,7 @@ export type ActivityView = {
   heard: number;
   percent: number | null;
   days: number;
-  notHeard: boolean;
+  warning: 'Not heard recently' | 'Rarely heard' | null;
 };
 // Figures for one service, or null when there is nothing trustworthy to show
 // (no data yet, the summary is more than three days old, or the service is not tracked).
@@ -75,7 +79,14 @@ export function activityFor(sat: Satellite, activity: Activity | null, now: numb
     heard,
     percent: total ? Math.round((heard / total) * 100) : null,
     days: Math.round(activity.hours / 24),
-    notHeard: total >= NOT_HEARD_MIN_REPORTS && heard === 0,
+    warning:
+      total < WARNING_MIN_REPORTS
+        ? null
+        : heard === 0
+          ? 'Not heard recently'
+          : heard / total < RARELY_HEARD_BELOW
+            ? 'Rarely heard'
+            : null,
   };
 }
 export const activityText = (a: ActivityView) =>
