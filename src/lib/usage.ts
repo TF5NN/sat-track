@@ -7,7 +7,8 @@ declare global {
     goatcounter?: { count?: (vars: { path: string; title?: string; event?: boolean }) => void };
   }
 }
-export type UsageEvent = 'save-pass' | 'event-show-passes' | 'download-tle';
+export type UsageEvent =
+  'save-pass' | 'event-show-passes' | 'download-tle' | 'main-site-from-northbound' | 'github-from-northbound';
 export function countUse(event: UsageEvent): void {
   try {
     window.goatcounter?.count?.({ path: event, title: event, event: true });

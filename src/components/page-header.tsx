@@ -1,4 +1,5 @@
 import { Radio } from 'lucide-react';
+import { countUse } from '../lib/usage';
 
 export default function PageHeader() {
   return (
@@ -20,8 +21,25 @@ export default function PageHeader() {
         <span className="private">
           <Radio size={12} /> FM satellite planner
         </span>
-        <a className="callsign" href="https://github.com/TF5NN/sat-track" target="_blank" rel="noreferrer">
+        <a
+          className="callsign"
+          href="https://tf5nn.github.io/"
+          target="_blank"
+          rel="noopener"
+          title="More projects from TF5NN"
+          onClick={() => countUse('main-site-from-northbound')}
+        >
           TF5NN ↗
+        </a>
+        <a
+          className="callsign"
+          href="https://github.com/TF5NN/sat-track"
+          target="_blank"
+          rel="noopener"
+          title="Source code on GitHub"
+          onClick={() => countUse('github-from-northbound')}
+        >
+          GitHub ↗
         </a>
       </div>
     </header>

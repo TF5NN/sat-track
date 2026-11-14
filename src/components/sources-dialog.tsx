@@ -131,9 +131,9 @@ export default function SourcesDialog({ data, now, result, modalRef, setSourceOp
         </p>
         <p>
           Visits are counted anonymously with GoatCounter, to see whether the planner is used: page opens by
-          country and referring site, plus how often a pass is saved, an event banner is followed or orbital
-          data is downloaded. No cookies, no personal profile, and nothing about your station or location is
-          sent.
+          country and referring site, plus how often a pass is saved, an event banner is followed, orbital
+          data is downloaded or a header link to my site or GitHub is used. No cookies, no personal profile,
+          and nothing about your station or location is sent.
         </p>
         <button className="button" onClick={() => setSourceOpen(false)}>
           Back to planner

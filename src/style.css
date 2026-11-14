@@ -2593,3 +2593,15 @@ footer > button {
     font-size: 9px;
   }
 }
+/* Very narrow phones: drop the decorative radio icon so both header links fit. */
+@media (max-width: 380px) {
+  .private {
+    display: none;
+  }
+  .header-right {
+    gap: 8px;
+  }
+  .header {
+    padding: 0 14px;
+  }
+}
