@@ -8,7 +8,12 @@ declare global {
   }
 }
 export type UsageEvent =
-  'save-pass' | 'event-show-passes' | 'download-tle' | 'main-site-from-northbound' | 'github-from-northbound';
+  | 'save-pass'
+  | 'event-show-passes'
+  | 'download-tle'
+  | 'main-site-from-northbound'
+  | 'github-from-northbound'
+  | 'use-my-location';
 export function countUse(event: UsageEvent): void {
   try {
     window.goatcounter?.count?.({ path: event, title: event, event: true });

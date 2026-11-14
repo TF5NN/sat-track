@@ -124,16 +124,19 @@ export default function SourcesDialog({ data, now, result, modalRef, setSourceOp
             </p>
           ))}
         <p>
-          Maidenhead entry accepts 4, 6 or 8 characters and uses the grid-cell centre. No GPS permission or
-          automatic radio control. Each opening asks you to confirm your remembered station, or the Reykjavík
+          Maidenhead entry accepts 4, 6 or 8 characters and uses the grid-cell centre. Your device’s location
+          is requested only if you press “Use my location”; it is turned into a 6-character grid square in
+          this browser and never sent anywhere. No automatic radio control. Each opening asks you to confirm
+          your remembered station; a first visit starts with an empty grid field, with Reykjavík offered as a
           default. Station coordinates stay in this browser; requests for the shared data file do not include
           them. No account or backend is required.
         </p>
         <p>
           Visits are counted anonymously with GoatCounter, to see whether the planner is used: page opens by
           country and referring site, plus how often a pass is saved, an event banner is followed, orbital
-          data is downloaded or a header link to my site or GitHub is used. No cookies, no personal profile,
-          and nothing about your station or location is sent.
+          data is downloaded, a header link to my site or GitHub is used, or the location button is pressed
+          (the press only, never the location). No cookies, no personal profile, and nothing about your
+          station or location is sent.
         </p>
         <button className="button" onClick={() => setSourceOpen(false)}>
           Back to planner

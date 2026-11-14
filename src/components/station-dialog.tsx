@@ -1,7 +1,8 @@
 import { useState, type RefObject } from 'react';
-import { Check, MapPin, X } from 'lucide-react';
+import { Check, LocateFixed, MapPin, X } from 'lucide-react';
 import { parseLocator, locatorFor } from '../lib/locator';
 import { defaultStation, grid, type Station } from '../lib/orbit';
+import { countUse } from '../lib/usage';
 
 type Props = {
   station: Station;
@@ -9,15 +10,60 @@ type Props = {
   onSave: (station: Station) => void;
   onClose: () => void;
   opening?: boolean;
+  blank?: boolean; // first visit: nothing remembered, so start with an empty grid field
 };
-export default function StationDialog({ station, dialogRef, onSave, onClose, opening = false }: Props) {
-  const [method, setMethod] = useState<'grid' | 'coordinates'>(station.locator ? 'grid' : 'coordinates');
-  const [locator, setLocator] = useState(station.locator ?? grid(station).toUpperCase());
-  const [lat, setLat] = useState(String(station.lat));
-  const [lon, setLon] = useState(String(station.lon));
+export default function StationDialog({
+  station,
+  dialogRef,
+  onSave,
+  onClose,
+  opening = false,
+  blank = false,
+}: Props) {
+  // The grid tab is the default. A remembered station entered as coordinates reopens on that tab,
+  // so its exact position is not replaced by a grid-square centre without the visitor choosing to.
+  const [method, setMethod] = useState<'grid' | 'coordinates'>(
+    blank || station.locator ? 'grid' : 'coordinates',
+  );
+  const [locator, setLocator] = useState(blank ? '' : (station.locator ?? grid(station).toUpperCase()));
+  const [lat, setLat] = useState(blank ? '' : String(station.lat));
+  const [lon, setLon] = useState(blank ? '' : String(station.lon));
   const [height, setHeight] = useState(String(station.height));
   const [error, setError] = useState('');
+  const [locating, setLocating] = useState(false);
+  const [found, setFound] = useState('');
   const cell = parseLocator(locator);
+  // Ask the device where it is, only when the visitor presses the button. The position is turned
+  // into a 6-character grid square here in the browser and is never sent anywhere.
+  function locate() {
+    if (locating) return;
+    countUse('use-my-location');
+    setError('');
+    setFound('');
+    if (!navigator.geolocation) {
+      setError('This device cannot report its location. Enter your grid square instead.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const square = locatorFor(position.coords.latitude, position.coords.longitude).toUpperCase();
+        setLocator(square);
+        setMethod('grid');
+        setFound(`Your device reports ${square}. Check it, then confirm below.`);
+        setLocating(false);
+      },
+      (failure) => {
+        setError(
+          failure.code === failure.PERMISSION_DENIED
+            ? 'Location permission was declined. Enter your grid square instead.'
+            : 'Your device could not find its location. Enter your grid square instead.',
+        );
+        setLocating(false);
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 },
+    );
+  }
   function switchMethod(next: 'grid' | 'coordinates') {
     if (next === 'coordinates' && method === 'grid' && cell) {
       setLat(cell.lat.toFixed(6));
@@ -94,8 +140,14 @@ export default function StationDialog({ station, dialogRef, onSave, onClose, ope
         <h2 id="station-title">{opening ? 'Where are you observing?' : 'Your observing station'}</h2>
         <p>
           {opening
-            ? 'Confirm your location to find satellites you can reach. Reykjavík is the default for new visitors; your last station is remembered here.'
-            : 'Enter your Maidenhead grid or coordinates. Your location is saved in this browser.'}
+            ? 'Enter your Maidenhead grid square to find satellites you can reach, or let your device find it. Your last station is remembered in this browser.'
+            : 'Enter your Maidenhead grid square or coordinates, or let your device find it. Your location is saved in this browser.'}
+        </p>
+        <button type="button" className="button locate" onClick={locate} aria-busy={locating}>
+          <LocateFixed size={14} /> {locating ? 'Finding your location…' : 'Use my location'}
+        </button>
+        <p className="locate-status" role="status">
+          {found}
         </p>
         <div className="location-method" role="tablist" aria-label="Location entry method">
           <button role="tab" aria-selected={method === 'grid'} onClick={() => switchMethod('grid')}>
@@ -125,6 +177,7 @@ export default function StationDialog({ station, dialogRef, onSave, onClose, ope
                   onChange={(e) => {
                     setLocator(e.target.value);
                     setError('');
+                    setFound('');
                   }}
                   aria-invalid={!!error && !cell}
                 />

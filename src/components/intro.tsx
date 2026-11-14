@@ -8,8 +8,7 @@ export default function Intro({ station, setEditing }: Props) {
       <section className="intro">
         <div>
           <div className="eyebrow location">
-            <span className="live-dot" /> OBSERVER STATION <span>/</span>{' '}
-            {(station.locator ?? grid(station)).toUpperCase()}
+            <span className="live-dot" /> OBSERVER STATION
           </div>
           <h1>
             Your next window
@@ -20,10 +19,7 @@ export default function Intro({ station, setEditing }: Props) {
         <button className="station-summary" onClick={() => setEditing(true)}>
           <MapPin size={17} />
           <span>
-            <strong>
-              {Math.abs(station.lat).toFixed(4)}° {station.lat < 0 ? 'S' : 'N'} ·{' '}
-              {Math.abs(station.lon).toFixed(4)}° {station.lon < 0 ? 'W' : 'E'}
-            </strong>
+            <strong>Grid {(station.locator ?? grid(station)).toUpperCase()}</strong>
             <small>2 m / 70 cm Yagi · FM half duplex</small>
           </span>
           <Settings2 size={15} />

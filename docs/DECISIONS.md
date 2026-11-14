@@ -32,7 +32,8 @@ from the operator's location. Working with other radios is a bonus, not the obje
 | Shorten the default list (it opened on 121 passes, 91 receive-only) | First set to FM voice at 15°, then judged too strict | Defaults are **Work, all modes, 5°**. The list must not look as if too few passes occur |
 | Show satellites you can only listen to | Keep them, but out of the default view | Under All / Listen. A future "advanced" tab could hold every satellite, always hidden by default |
 | Show local time with UTC beside it | Accepted | Device-local time by default, UTC alongside, remembered UTC switch |
-| Ask for location only once; add "use my location" | Rejected, keep as is | Dialog on every visit, Reykjavík default, no GPS |
+| Ask for location only once; add "use my location" | First rejected; then changed (14 Nov 2026) | Dialog still opens on every visit. It now opens on the Maidenhead tab, a first visit starts empty with Reykjavík as a button, and "Use my location" fills in the device's 6-character square (press counted, location never sent) |
+| Show the station as coordinates | Changed to the Maidenhead locator | The station button reads "Grid HP94AD", and "Save pass" writes the grid into the calendar entry for logging the activation |
 | Warn when the hand-written catalogue review is over 30 days old | Not until AMSAT data was checked | Not added. AMSAT reports now cover this need |
 | Pull AMSAT's reception reports once a day | Accepted after scoping | One request a day, 7-day window, shown per satellite, AMSAT credited (CC BY 4.0) |
 | Time window for AMSAT reports | 7 days | 1–3 days is too thin for quiet satellites; 14–30 days hides recent failures |

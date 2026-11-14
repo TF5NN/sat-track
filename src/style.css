@@ -2605,3 +2605,15 @@ footer > button {
     padding: 0 14px;
   }
 }
+/* Location dialog: the "Use my location" button and its result line. */
+.button.locate {
+  margin-top: 18px;
+}
+.locate-status {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--green);
+}
+.locate-status:empty {
+  display: none;
+}

@@ -74,11 +74,13 @@ for (const [name, station] of Object.entries(stations)) {
       peakElevation: p.peak.el,
       riseDirection: 'S',
       setDirection: 'SE',
+      grid: 'HP94AD',
     }).replace(/\r\n /g, '');
     assert(
       event.includes('67.0 Hz') && event.includes(p.sat.source) && event.includes('clear southern horizon'),
       'calendar inherits tone, source and conditional notes',
     );
+    assert(event.includes('Station grid: HP94AD'), 'calendar carries the station grid for logging');
   }
 }
 assert(summary.Jakarta.io86, 'equatorial FM satellite is offered where reachable');

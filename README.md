@@ -6,7 +6,7 @@ A small, static amateur-satellite planner designed for the VGC VR-N76 and a 2 m 
 
 ## What it does
 
-- Prompts for Maidenhead (4, 6 or 8 characters) or coordinates on opening. New visitors start with Reykjavík; the last station is remembered in that browser.
+- Asks for a Maidenhead grid square (4, 6 or 8 characters) on opening, with coordinates as a second tab. A first visit starts with an empty field; "Use my location" fills in the device's 6-character square, and Reykjavík is offered as a default. The last station is remembered in that browser and shown as a grid square.
 - Calculates passes on the visitor's device with satellite.js / SGP4.
 - Opens on the services the station can work (FM voice and APRS) from a 5° peak; receive-only services are one tap away under All / Listen.
 - Shows pass times in device-local time with UTC alongside, with a switch to UTC; the choice is remembered.
@@ -16,7 +16,7 @@ A small, static amateur-satellite planner designed for the VGC VR-N76 and a 2 m 
 - Uses one reachable-service set for pass lists, satellite choices, the guide and orbital-data controls. A service needs a remaining modeled operating window in the selected 24/48/72 hours at the selected minimum peak elevation.
 - Separates compatible FM voice / 1200-baud AFSK APRS operation from receive-only APRS and FM SSTV.
 - Shows UTC timing, true bearings, sky paths, frequencies, CTCSS, Doppler guidance and concise source-linked notes.
-- Exports calendar events with radio settings, operating notes and source links, plus current TLE lines for manual entry in the HT app.
+- Exports calendar events with the station's grid square, radio settings, operating notes and source links, plus current TLE lines for manual entry in the HT app.
 
 APRS requires compatible packet/TNC support and configuration; SSTV requires an audio decoder. A geometric pass does not establish that a satellite is transmitting. Unscheduled activations remain conditional. There is no automatic radio control or live receiver.
 
@@ -49,7 +49,7 @@ Design decisions, the reasons behind the defaults and open items are recorded in
 - `src/hooks/` loads and refreshes the orbital data and handles keyboard focus inside dialogs.
 - `src/lib/` is the calculation and data code (orbits, catalogue, time formatting, AMSAT reports, calendar and TLE export), covered by `npm test`.
 
-`npm run test:ui -- write` records the built app's HTML across 55 steps (dialogs, filters, a live pass, phone layout, clock and data warnings) with a frozen clock; `npm run test:ui -- check` compares a later build against it. Use it around changes that must not alter the page. It needs Playwright with Chromium and is not part of `npm test` or CI.
+`npm run test:ui -- write` records the built app's HTML across 59 steps (dialogs, filters, a live pass, phone layout, clock and data warnings) with a frozen clock; `npm run test:ui -- check` compares a later build against it. Use it around changes that must not alter the page. It needs Playwright with Chromium and is not part of `npm test` or CI.
 
 The build is ordinary static HTML/CSS/JavaScript in `dist/`. It needs no backend, accounts, database or runtime secrets.
 
@@ -89,9 +89,9 @@ A later personal-site domain can retain `/sat-track/`; changing the hostname doe
 
 ## Data and privacy
 
-Station coordinates and pass calculations stay in the browser. The shared data-file request contains no station coordinates. No GPS permission or authentication are used.
+Station coordinates and pass calculations stay in the browser. The shared data-file request contains no station coordinates. The device's location is requested only when "Use my location" is pressed; it is turned into a 6-character grid square in the browser and never sent anywhere. No authentication is used.
 
-Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com/) (site code `tf5nn`, private dashboard): page opens by country and referring site, plus five actions (`save-pass`, `event-show-passes`, `download-tle`, and the header links `main-site-from-northbound` and `github-from-northbound`). No cookies are set and nothing about the station is sent. The counter script loads separately from the app, so the planner works the same if it is blocked. Local previews are not counted. To leave your own visits out, open the app once with `#toggle-goatcounter` at the end of the address in each browser you use. The stylesheet loads DM Sans and IBM Plex Mono from Google Fonts, with local fallback fonts.
+Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com/) (site code `tf5nn`, private dashboard): page opens by country and referring site, plus six actions (`save-pass`, `event-show-passes`, `download-tle`, the header links `main-site-from-northbound` and `github-from-northbound`, and `use-my-location`, which records the press only, never the location). No cookies are set and nothing about the station is sent. The counter script loads separately from the app, so the planner works the same if it is blocked. Local previews are not counted. To leave your own visits out, open the app once with `#toggle-goatcounter` at the end of the address in each browser you use. The stylesheet loads DM Sans and IBM Plex Mono from Google Fonts, with local fallback fonts.
 
 Orbital and frequency data come from the linked providers and operators; their acknowledgements and applicable terms remain separate from this application's source. Source publication does not imply that all satellite payloads are currently active. Bearings assume a clear horizon; terrain, refraction and obstructions are not modeled.
 

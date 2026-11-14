@@ -110,6 +110,7 @@ async function open(name, options = {}, time = clockAt, prepare) {
   await page.getByRole('button', { name: /Use this location/ }).click();
   await snap('06 invalid latitude');
   await page.getByLabel('Latitude').fill('64.1466');
+  await page.getByLabel('Longitude').fill('-21.9426');
   await page.getByRole('button', { name: /Use this location/ }).click();
   await tick(1000);
   await snap('07 planner defaults');
@@ -228,7 +229,7 @@ async function open(name, options = {}, time = clockAt, prepare) {
     ...devices['iPhone 13'],
     timezoneId: 'America/St_Johns',
   });
-  await page.getByRole('button', { name: /Use this location/ }).click();
+  await page.getByRole('button', { name: 'Use Reykjavík default' }).click();
   await tick(1000);
   await snap('01 planner');
   await page.locator('.pass-row').nth(1).click();
@@ -242,7 +243,7 @@ async function open(name, options = {}, time = clockAt, prepare) {
 // ---- Event banner: a dated event hidden by the Work view
 {
   const { page, snap, tick, close } = await open('event');
-  await page.getByRole('button', { name: /Use this location/ }).click();
+  await page.getByRole('button', { name: 'Use Reykjavík default' }).click();
   await tick(1000);
   await snap('01 banner in work view');
   await page.getByRole('button', { name: 'Satellite guide' }).click();
@@ -251,10 +252,30 @@ async function open(name, options = {}, time = clockAt, prepare) {
   await snap('03 show passes from banner');
   await close();
 }
+// ---- "Use my location": the device reports London; then a device that refuses
+{
+  const { page, snap, tick, close } = await open('location', {
+    geolocation: { latitude: 51.5074, longitude: -0.1278 },
+    permissions: ['geolocation'],
+  });
+  await snap('01 first visit, empty grid');
+  await page.getByRole('button', { name: 'Use my location' }).click();
+  await snap('02 device location found');
+  await page.getByRole('button', { name: /Use this location/ }).click();
+  await tick(1000);
+  await snap('03 planner for IO91WM');
+  await close();
+}
+{
+  const { page, snap, close } = await open('location refused', { permissions: [] });
+  await page.getByRole('button', { name: 'Use my location' }).click();
+  await snap('01 permission declined');
+  await close();
+}
 // ---- Device clock two days behind the data
 {
   const { page, snap, tick, close } = await open('slow clock', {}, fetchedAt - 2 * 86400000);
-  await page.getByRole('button', { name: /Use this location/ }).click();
+  await page.getByRole('button', { name: 'Use Reykjavík default' }).click();
   await tick(1000);
   await snap('01 clock warning');
   await close();
@@ -264,14 +285,14 @@ async function open(name, options = {}, time = clockAt, prepare) {
   const { page, snap, tick, close } = await open('offline', {}, clockAt, (p) =>
     p.route('**/data/orbits.json', (r) => r.abort()),
   );
-  await page.getByRole('button', { name: /Use this location/ }).click();
+  await page.getByRole('button', { name: 'Use Reykjavík default' }).click();
   await tick(1000);
   await snap('01 saved data notice');
   await close();
 }
 {
   const { page, snap, tick, close } = await open('old data', {}, fetchedAt + 8 * 86400000);
-  await page.getByRole('button', { name: /Use this location/ }).click();
+  await page.getByRole('button', { name: 'Use Reykjavík default' }).click();
   await tick(1000);
   await snap('01 everything expired');
   await page.getByRole('button', { name: 'Data details' }).click();

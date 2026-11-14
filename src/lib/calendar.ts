@@ -9,6 +9,7 @@ type CalendarPass = {
   riseDirection: string;
   setDirection: string;
   tuning?: string[]; // Doppler settings for the pass, one line per retune
+  grid?: string; // the station's Maidenhead locator, handy for logging the activation
 };
 const stamp = (time: number) => new Date(time).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 const textValue = (value: string) =>
@@ -48,6 +49,7 @@ export function createPassCalendar(pass: CalendarPass, generatedAt = Date.now())
       : []),
     `Maximum elevation: ${pass.peakElevation.toFixed(0)}°`,
     `Direction: ${pass.riseDirection} → ${pass.setDirection}`,
+    ...(pass.grid ? [`Station grid: ${pass.grid}`] : []),
     ...(pass.tuning && pass.tuning.length > 1 ? ['', 'Doppler tuning (5 kHz steps):', ...pass.tuning] : []),
     '',
     `${sat.condition}. ${sat.notes}`,

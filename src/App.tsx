@@ -31,6 +31,7 @@ export default function Home() {
   const modalRef = useRef<HTMLElement>(null);
   const { elements, activity, data, fetching, load } = useOrbitData();
   const [stationConfirmed, setStationConfirmed] = useState(false);
+  const [remembered, setRemembered] = useState(false); // a station was saved in this browser before
   const [station, setStation] = useState<Station>(defaultStation),
     [editing, setEditing] = useState(false),
     [orbitSatId, setOrbitSatId] = useState<string | null>(null);
@@ -71,8 +72,10 @@ export default function Home() {
         Number.isFinite(s.height) &&
         s.height >= -500 &&
         s.height <= 9000
-      )
+      ) {
         setStation({ ...s, locator: typeof s.locator === 'string' ? s.locator : undefined });
+        setRemembered(true);
+      }
     } catch {}
     setEditing(true);
     // The clock, live Doppler and sky position follow `now` every second. Passes are only
@@ -311,6 +314,7 @@ export default function Home() {
           station={station}
           dialogRef={modalRef}
           opening={!stationConfirmed}
+          blank={!stationConfirmed && !remembered}
           onSave={saveStation}
           onClose={() => {
             if (stationConfirmed) setEditing(false);

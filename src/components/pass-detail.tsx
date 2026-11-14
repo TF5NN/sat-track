@@ -16,7 +16,7 @@ import { SkyPlot } from './sky-plot';
 import { activityFor, activityText, type Activity } from '../lib/activity';
 import { createPassCalendar } from '../lib/calendar';
 import { band, frequency, sources } from '../lib/catalog';
-import { compass, doppler, pointAt, tuningSteps, type Pass, type Station } from '../lib/orbit';
+import { compass, doppler, pointAt, tuningSteps, type Pass, type Station, grid } from '../lib/orbit';
 import { offsetLabel, utcDate, utcTime, type Clock } from '../lib/time';
 import { countUse } from '../lib/usage';
 
@@ -41,6 +41,7 @@ function ics(pass: Pass, station: Station) {
     riseDirection: compass(pass.aos.az),
     setDirection: compass(pass.los.az),
     tuning,
+    grid: (station.locator ?? grid(station)).toUpperCase(),
   });
   const url = URL.createObjectURL(new Blob([content], { type: 'text/calendar' })),
     a = document.createElement('a');
