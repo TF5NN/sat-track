@@ -100,6 +100,20 @@ export default function PassDetail({
         <Badge access={pass.access} />
       </div>
       <div className="plot-wrap">
+        {inPass && live && (
+          <>
+            <div className="live-readout heading">
+              <span>HEADING</span>
+              <strong>{Math.round(live.az) % 360}°</strong>
+              <small>{compass(live.az)}</small>
+            </div>
+            <div className="live-readout elevation">
+              <span>ELEVATION</span>
+              <strong>{Math.max(0, live.el).toFixed(0)}°</strong>
+              <small>{now < pass.peak.time ? 'rising' : 'falling'}</small>
+            </div>
+          </>
+        )}
         <SkyPlot pass={pass} live={live} />
         <span className="plot-caption">
           {compass(pass.aos.az)} <ArrowRight size={12} /> {compass(pass.los.az)} <span>·</span>{' '}
