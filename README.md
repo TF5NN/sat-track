@@ -15,6 +15,7 @@ A small, static amateur-satellite planner designed for the VGC VR-N76 and a 2 m 
 - Lists Doppler settings as 5 kHz radio steps, only as many as the pass needs (retune when the drift passes 3.5 kHz).
 - Uses one reachable-service set for pass lists, satellite choices, the guide and orbital-data controls. A service needs a remaining modeled operating window in the selected 24/48/72 hours at the selected minimum peak elevation.
 - Separates compatible FM voice / 1200-baud AFSK APRS operation from receive-only APRS and FM SSTV.
+- During a pass, shows the live heading and elevation in large figures beside the sky plot, with whether the satellite is rising or falling.
 - Shows UTC timing, true bearings, sky paths, frequencies, CTCSS, Doppler guidance and concise source-linked notes.
 - Exports calendar events with the station's grid square, radio settings, operating notes and source links, plus current TLE lines for manual entry in the HT app.
 

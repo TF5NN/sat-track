@@ -43,6 +43,7 @@ from the operator's location. Working with other radios is a bonus, not the obje
 | A running ISS SSTV event was invisible in the default Work view | Announce it in a banner, on the guide tab too | Banner per dated event that is reachable but hidden by the filter; "Show passes" switches to it. Event dates are still entered by hand in the catalogue |
 | Count visitors, to know whether publishing is worth it | GoatCounter, site code `tf5nn`, private dashboard, no visible counter | Page opens are counted, since reading the page is already using it, plus pass saves, banner clicks and orbit downloads. Flag Counter was considered and not used |
 | Link both apps to the main site | "TF5NN ↗" goes to tf5nn.github.io, with a separate "GitHub ↗" button beside it, as on the main site; clicks counted | Done in Northbound and in the antenna tool, which was renamed Feedpoint with its own logo (v3.2.0) |
+| Show where to point during a pass | Heading top left and elevation top right of the sky plot, only while the pass is on; approved from a preview, including the small "rising / falling" line | Done |
 | Larger text and more contrast | Rejected, readable as is | Unchanged |
 | Replace jargon (AOS, TCA, CTCSS, TLE) with plain words | Rejected | Unchanged |
 | Show Doppler as radio steps instead of 5 decimals | Accepted, and it should show only as many steps as the pass needs | 5 kHz steps, retuned only when drift passes 3.5 kHz; also written into the calendar export |
