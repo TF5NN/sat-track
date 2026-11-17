@@ -2735,3 +2735,104 @@ footer > button {
 .list-legend i.other {
   background: #b59a62;
 }
+/* Optional look-around view: the skyline, the pass, sun and moon, in a dialog. */
+.terrain-toggle + .terrain-toggle {
+  margin-top: 6px;
+}
+.look-modal {
+  width: 720px;
+  padding: 24px;
+}
+.look-modal h2 {
+  margin: 4px 0 12px;
+}
+.look-modal .eyebrow {
+  font-size: 8px;
+  color: #8b9b7f;
+}
+.look-view {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #d5dfd3;
+  border-radius: 8px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.look-view:active {
+  cursor: grabbing;
+}
+.look-sky {
+  fill: #f4f7f2;
+}
+.look-ground {
+  fill: #b9c4b3;
+  stroke: #b9c4b3;
+  stroke-width: 0.4;
+  stroke-linejoin: round;
+}
+.look-grid {
+  fill: none;
+  stroke: #d6dfd8;
+  stroke-width: 0.8;
+}
+.look-level {
+  fill: none;
+  stroke: #74866e;
+  stroke-width: 0.8;
+}
+.look-tick {
+  stroke: #55774a;
+  stroke-width: 0.8;
+}
+.look-cardinal {
+  font: 600 10px var(--mono);
+  fill: #142f32;
+}
+.look-bearing {
+  font: 400 6.5px var(--mono);
+  fill: #55774a;
+}
+.look-degree {
+  font: 400 6.5px var(--mono);
+  fill: #a0ad97;
+}
+.look-mark {
+  font: 500 7.5px var(--mono);
+  fill: #21806a;
+  paint-order: stroke;
+  stroke: #f4f7f2;
+  stroke-width: 2.5px;
+}
+.look-body {
+  font: 400 7px var(--mono);
+  fill: #74866e;
+}
+.look-sun {
+  fill: #e9b84a;
+  stroke: #c9962a;
+}
+.look-moon {
+  fill: #e6e9ee;
+  stroke: #9aa5b1;
+}
+.modal .look-facing {
+  font: 400 11px var(--mono);
+  color: #55774a;
+  margin: 10px 0 8px;
+}
+.look-facing strong {
+  color: var(--ink);
+}
+.look-modal p:last-child {
+  font-size: 11px;
+  margin-bottom: 0;
+}
+@media (max-width: 760px) {
+  .look-modal {
+    width: 100%;
+    padding: 18px 14px;
+  }
+}

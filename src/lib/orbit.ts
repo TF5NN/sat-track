@@ -1,5 +1,6 @@
-import { twoline2satrec, propagate, gstime, eciToEcf, ecfToLookAngles, jday } from 'satellite.js';
+import { twoline2satrec, propagate, gstime, eciToEcf, ecfToLookAngles } from 'satellite.js';
 import type { SatRec } from 'satellite.js';
+import { sunDirection } from './sky';
 import { band, type Satellite } from './catalog';
 // `locator` is the grid square shown for the station. Without `exact`, the position is that square's
 // centre; with it (from "Use my location"), lat and lon are the device's own position.
@@ -64,15 +65,7 @@ export function pointAt(rec: SatRec, time: number, station: Station): Point | nu
     ecf,
   );
   // Low-precision solar vector (Meeus / Astronomical Almanac), equatorial frame.
-  const n = jday(date) - 2451545,
-    g = (357.528 + 0.9856003 * n) / DEG;
-  const lambda = (280.46 + 0.9856474 * n + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) / DEG;
-  const obliquity = (23.439 - 0.0000004 * n) / DEG;
-  const sun = [
-    Math.cos(lambda),
-    Math.cos(obliquity) * Math.sin(lambda),
-    Math.sin(obliquity) * Math.sin(lambda),
-  ];
+  const sun = sunDirection(date);
   const mag = 1,
     r = Math.hypot(p.x, p.y, p.z);
   const dot = -(p.x * sun[0] + p.y * sun[1] + p.z * sun[2]) / (r * mag);

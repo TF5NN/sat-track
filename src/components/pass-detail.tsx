@@ -10,9 +10,11 @@ import {
   Sun,
   X,
   Mountain,
+  View,
 } from 'lucide-react';
 import { twoline2satrec } from 'satellite.js';
 import Badge from './badge';
+import LookAround from './look-around';
 import { SkyPlot } from './sky-plot';
 import { activityFor, activityText, type Activity } from '../lib/activity';
 import { createPassCalendar } from '../lib/calendar';
@@ -83,7 +85,11 @@ export default function PassDetail({
   const zoneName = () => clock.name;
   const heard = activityFor(pass.sat, activity, now);
   const [t, setT] = useState(0);
-  useEffect(() => setT(0), [pass.key]);
+  const [looking, setLooking] = useState(false);
+  useEffect(() => {
+    setT(0);
+    setLooking(false);
+  }, [pass.key]);
   const rec = useMemo(() => twoline2satrec(pass.element.line1, pass.element.line2), [pass.element]);
   const inPass = now >= pass.aos.time && now < pass.los.time;
   const sample = pass.aos.time + ((pass.los.time - pass.aos.time) * t) / 100;
@@ -151,6 +157,28 @@ export default function PassDetail({
           <button className="terrain-toggle" onClick={onTerrain} aria-pressed={terrain.on}>
             <Mountain size={12} /> {terrain.on ? 'Hide terrain' : 'Check terrain'}
           </button>
+        )}
+        {horizon && exactSpot(station) && (
+          <button
+            className="terrain-toggle"
+            onClick={() => {
+              countUse('look-around');
+              setLooking(true);
+            }}
+          >
+            <View size={12} /> Look around
+          </button>
+        )}
+        {looking && horizon && (
+          <LookAround
+            pass={pass}
+            station={station}
+            horizon={horizon}
+            live={inPass ? live : null}
+            now={now}
+            clock={clock}
+            onClose={() => setLooking(false)}
+          />
         )}
       </div>
       <div className="timing">

@@ -13,7 +13,8 @@ export type UsageEvent =
   | 'download-tle'
   | 'main-site-from-northbound'
   | 'github-from-northbound'
-  | 'use-my-location';
+  | 'use-my-location'
+  | 'look-around';
 export function countUse(event: UsageEvent): void {
   try {
     window.goatcounter?.count?.({ path: event, title: event, event: true });

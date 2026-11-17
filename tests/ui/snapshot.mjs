@@ -289,17 +289,25 @@ async function open(name, options = {}, time = clockAt, prepare) {
   result['extras: 02 pin placed'] = await page.locator('.map-picker + .grid-help').innerText();
   await page.getByRole('button', { name: 'Use Reykjavík default' }).click();
   await tick(1000);
-  await page.locator('.terrain-toggle').click();
+  await page.locator('.terrain-toggle[aria-pressed]').click();
   await page.locator('.terrain-strip strong').waitFor();
   await snap('03 terrain shown for the open pass');
-  await page.locator('.terrain-toggle').click();
+  await page.getByRole('button', { name: 'Look around' }).click();
+  await snap('03b look around');
+  await page.locator('.look-view').focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowUp');
+  await snap('03c look around, turned');
+  await page.keyboard.press('Escape');
+  await snap('03d look around closed');
+  await page.locator('.terrain-toggle[aria-pressed]').click();
   await snap('04 terrain hidden again');
   await page.locator('.station-summary').click();
   await page.getByRole('tab', { name: 'Maidenhead grid' }).click();
   await page.getByLabel('Maidenhead locator').fill('HP94ad');
   await page.getByRole('button', { name: /Save station/ }).click();
   await tick(1000);
-  await page.locator('.terrain-toggle').click();
+  await page.locator('.terrain-toggle[aria-pressed]').click();
   await snap('05 a grid square is not exact enough');
   await close();
 }
