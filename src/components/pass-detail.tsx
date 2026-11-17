@@ -19,7 +19,7 @@ import { createPassCalendar } from '../lib/calendar';
 import { band, frequency, sources } from '../lib/catalog';
 import { compass, doppler, pointAt, tuningSteps, type Pass, type Station, grid } from '../lib/orbit';
 import { offsetLabel, utcDate, utcTime, type Clock } from '../lib/time';
-import { exactSpot, inIceland, terrainView, type Horizon } from '../lib/terrain';
+import { ANTENNA_METRES, exactSpot, inIceland, terrainView, type Horizon } from '../lib/terrain';
 import { countUse } from '../lib/usage';
 
 function ics(pass: Pass, station: Station) {
@@ -195,7 +195,9 @@ export default function PassDetail({
                 </dl>
               )}
               <small>
-                Ground at your spot {Math.round(horizon.groundMetres)} m. Approximate: good to a few seconds,
+                Seen from {ANTENNA_METRES} m above the ground at your spot. The ground there is{' '}
+                {Math.round(horizon.groundMetres)} m above sea level, so your station height has been set to{' '}
+                {Math.round(horizon.groundMetres) + ANTENNA_METRES} m. Approximate: good to a few seconds,
                 leans towards showing more blocking, and knows nothing of buildings or trees.
               </small>
             </>

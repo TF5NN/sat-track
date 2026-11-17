@@ -4,6 +4,8 @@ import type { Station } from './orbit';
 // in a separate repository (github.com/TF5NN/terrain) and are loaded from its published copy
 // only when the visitor asks for the check, so the planner itself stays as small as it was.
 export const TERRAIN_BASE = 'https://tf5nn.github.io/terrain/v1/';
+/** The antenna is taken to be this far above the ground at the spot. */
+export const ANTENNA_METRES = 2;
 
 /** The terrain's elevation angle, in degrees, on every `stepDegrees` of true bearing from north. */
 export type Horizon = { angles: ArrayLike<number>; stepDegrees: number; groundMetres: number };
@@ -11,7 +13,7 @@ export type Horizon = { angles: ArrayLike<number>; stepDegrees: number; groundMe
 type TerrainModule = {
   openTerrain: (base: string) => Promise<{
     covers: (lat: number, lon: number) => Promise<boolean>;
-    horizon: (at: { lat: number; lon: number }) => Promise<Horizon>;
+    horizon: (at: { lat: number; lon: number; antennaMetres: number }) => Promise<Horizon>;
   }>;
 };
 let opened: ReturnType<TerrainModule['openTerrain']> | null = null;
@@ -20,8 +22,8 @@ const cache = new Map<string, Promise<Horizon>>();
 /** A quick box around Iceland: whether to offer the check at all. Nothing is loaded for this. */
 export const inIceland = (s: Station) => s.lat > 63.2 && s.lat < 66.7 && s.lon > -24.8 && s.lon < -13.2;
 
-/** A station given as a grid square is the square's centre, which is too vague for terrain. */
-export const exactSpot = (s: Station) => !s.locator;
+/** A station given only as a grid square is the square's centre, which is too vague for terrain. */
+export const exactSpot = (s: Station) => !s.locator || s.exact === true;
 
 /** The horizon around a station. Loads the terrain code and the few tiles it needs on first use. */
 export function loadHorizon(station: Station): Promise<Horizon> {
@@ -34,7 +36,7 @@ export function loadHorizon(station: Station): Promise<Horizon> {
       const terrain = await opened;
       if (!(await terrain.covers(station.lat, station.lon)))
         throw new Error('No terrain data for this spot.');
-      return terrain.horizon({ lat: station.lat, lon: station.lon });
+      return terrain.horizon({ lat: station.lat, lon: station.lon, antennaMetres: ANTENNA_METRES });
     })();
     pending.catch(() => {
       cache.delete(key);

@@ -1,7 +1,9 @@
 import { twoline2satrec, propagate, gstime, eciToEcf, ecfToLookAngles, jday } from 'satellite.js';
 import type { SatRec } from 'satellite.js';
 import type { Satellite } from './catalog';
-export type Station = { lat: number; lon: number; height: number; locator?: string };
+// `locator` is the grid square shown for the station. Without `exact`, the position is that square's
+// centre; with it (from "Use my location"), lat and lon are the device's own position.
+export type Station = { lat: number; lon: number; height: number; locator?: string; exact?: boolean };
 export type Element = { norad: number; name: string; line1: string; line2: string; epoch: number };
 export type Point = { time: number; az: number; el: number; range: number; sun: boolean };
 export type Pass = {
