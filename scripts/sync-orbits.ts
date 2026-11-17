@@ -4,6 +4,7 @@ import { parseTLE, type Element } from '../src/lib/orbit.ts';
 import { parseSatnogs, mergeElements, elementText } from '../src/lib/elements.ts';
 import { validOrbit, parseBundle, type OrbitBundle } from '../src/lib/orbital-data.ts';
 import { summarizeReports, parseActivity, ACTIVITY_HOURS, type Activity } from '../src/lib/activity.ts';
+import { extraLinks, parseExtras, summarizeTransmitters, type Extras } from '../src/lib/extras.ts';
 
 export const feeds = [
   { name: 'AMSAT', url: sources.tle, json: false },
@@ -15,7 +16,8 @@ const fallback = {
   json: false,
 };
 export function prepareDataset(groups: Element[][], previous: Element[], now: number): Element[] {
-  const wanted = new Set(catalog.map((s) => s.norad));
+  // The hand-checked catalogue plus the satellites for other radios (extras.ts).
+  const wanted = new Set([...catalog.map((s) => s.norad), ...extraLinks.map((l) => l.norad)]);
   return mergeElements(
     [previous, ...groups].map((g) => g.filter((e) => wanted.has(e.norad) && validOrbit(e, now))),
     now,
@@ -28,11 +30,13 @@ export async function syncOrbits(
     path = options.datasetPath ?? new URL('../public/data/orbits.json', import.meta.url);
   const request = options.fetchImpl ?? fetch;
   let previous: Element[] = [],
-    activity: Activity | null = null;
+    activity: Activity | null = null,
+    extras: Extras | null = null;
   try {
     const saved = parseBundle(JSON.parse(await readFile(path, 'utf8')), now);
     previous = saved.elements;
     activity = parseActivity(saved.bundle.activity);
+    extras = parseExtras(saved.bundle.extras);
   } catch {
     /* Initial publication has no saved file. */
   }
@@ -87,13 +91,30 @@ export async function syncOrbits(
     if (!response.ok) throw Error(`HTTP ${response.status}`);
     activity = summarizeReports(
       await response.json(),
-      catalog.flatMap((s) => (s.amsat ? [s.amsat] : [])),
+      [...catalog.flatMap((s) => (s.amsat ? [s.amsat] : [])), ...extraLinks.map((l) => l.amsat)],
       ACTIVITY_HOURS,
       now,
     );
   } catch (error) {
     console.warn(
       `AMSAT status: ${error instanceof Error ? error.message : 'download failed'}. Keeping the previous report summary.`,
+    );
+  }
+  // Frequencies for the satellites in extras.ts, from the SatNOGS database. Also a bonus:
+  // a failed download keeps the previous copy.
+  try {
+    const response = await request(sources.satnogsTransmitters, {
+      signal: AbortSignal.timeout(90000),
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'TF5NN-sat-track/1.0 (https://github.com/TF5NN/sat-track)',
+      },
+    });
+    if (!response.ok) throw Error(`HTTP ${response.status}`);
+    extras = summarizeTransmitters(await response.json(), extraLinks, now);
+  } catch (error) {
+    console.warn(
+      `SatNOGS transmitters: ${error instanceof Error ? error.message : 'download failed'}. Keeping the previous copy.`,
     );
   }
   const ids = [...new Set(catalog.map((s) => s.norad))];
@@ -108,6 +129,7 @@ export async function syncOrbits(
     sources: successful.sort((a, b) => a.name.localeCompare(b.name)),
     missing: ids.filter((id) => !elements.some((e) => e.norad === id)),
     ...(activity ? { activity } : {}),
+    ...(extras ? { extras } : {}),
   };
   parseBundle(bundle, now);
   const temporary = new URL('orbits.json.tmp', path);
@@ -117,6 +139,7 @@ export async function syncOrbits(
     JSON.stringify({
       result: 'PASS',
       reportSummary: activity?.fetchedAt ?? null,
+      otherRadioEntries: extras ? Object.keys(extras.entries).length : null,
       spacecraft: elements.length,
       missing: bundle.missing,
       providers: bundle.provider,

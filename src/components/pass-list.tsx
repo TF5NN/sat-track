@@ -18,6 +18,7 @@ type Props = {
   activity: Activity | null;
   countWork: number;
   countListen: number;
+  countOther: number;
   visibleCount: number;
   clock: Clock;
   reset: () => void;
@@ -38,6 +39,7 @@ export default function PassList({
   activity,
   countWork,
   countListen,
+  countOther,
   visibleCount,
   clock,
   reset,
@@ -63,6 +65,12 @@ export default function PassList({
         </div>
         <span className="list-legend">
           <i /> {countWork} work <i className="rx" /> {countListen} listen
+          {countOther > 0 && (
+            <>
+              {' '}
+              <i className="other" /> {countOther} other
+            </>
+          )}
         </span>
       </div>
       <div className="list-hint">

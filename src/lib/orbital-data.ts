@@ -1,6 +1,7 @@
 import { twoline2satrec, propagate } from 'satellite.js';
 import { parseTLE, type Element } from './orbit';
 import type { Activity } from './activity';
+import type { Extras } from './extras';
 
 export type OrbitBundle = {
   schemaVersion: 1;
@@ -10,6 +11,7 @@ export type OrbitBundle = {
   sources: { name: string; url: string; fetchedAt: string }[];
   missing: number[];
   activity?: Activity; // AMSAT reception reports; optional and never blocks orbit data
+  extras?: Extras; // SatNOGS frequencies for the satellites in extras.ts; optional
 };
 const DAY = 86400000;
 // Fresh enough to predict with: at most 7 days old and at most 1 day in the future.

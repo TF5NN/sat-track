@@ -38,6 +38,7 @@ export default function SourcesDialog({ data, now, result, modalRef, setSourceOp
           {[
             ['AMSAT orbital elements', sources.tle],
             ['SatNOGS supplementary orbital elements', sources.satnogs],
+            ['SatNOGS database: frequencies for other radios (CC BY-SA 4.0)', sources.satnogsDb],
             ['APRS satellite frequencies', sources.packet],
             ['FM frequencies & restrictions', sources.fm],
             ['AMSAT operator reception reports (CC BY 4.0)', sources.status],
@@ -130,6 +131,14 @@ export default function SourcesDialog({ data, now, result, modalRef, setSourceOp
           you to confirm your remembered station; a first visit starts with an empty grid field, with
           Reykjavík offered as a default. Station coordinates stay in this browser; requests for the shared
           data file do not include them. No account or backend is required.
+        </p>
+        <p>
+          “Show satellites for other radios” adds linear transponders, data digipeaters, telemetry beacons and
+          picture downlinks that an FM handheld cannot use. Their frequencies, modes and passbands come from
+          the SatNOGS database (db.satnogs.org, licensed CC BY-SA 4.0), collected once a day, and are not
+          checked by hand; each one says when SatNOGS last changed it. Only the link between an AMSAT status
+          entry and a SatNOGS entry is kept by hand. The reception reports on them are AMSAT’s, as for the
+          others.
         </p>
         <p>
           Two extras load outside data, and only if you ask for them. The Map tab of the station dialog

@@ -44,7 +44,7 @@ test('partial downloads retain last good spacecraft and never downgrade epochs',
     good.epoch,
   );
   assert.equal(
-    prepareDataset([elements], [], now).some((e) => e.norad === 7530),
+    prepareDataset([elements], [], now).some((e) => e.norad === 22825),
     false,
     'only curated compatible spacecraft are published',
   );
@@ -158,7 +158,7 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
       row('RS40S_[SSTV]', 'Telemetry Only', 12),
       row('RS38S_[SSTV]', 'Heard', 2),
       row('RS38S_[SSTV]', 'Not Heard', 2),
-      row('AO-7_[U/v]', 'Heard', 40),
+      row('QO-100_[NB]', 'Heard', 40),
       row('ISS_[FM]', 'Heard', 'many'),
     ],
   };
@@ -222,4 +222,101 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test('SatNOGS entries become catalogue entries for other radios, and inactive ones drop out', async () => {
+  const { summarizeTransmitters, extraCatalog, extraLinks, parseExtras } =
+    await import('../src/lib/extras.ts');
+  const links = [
+    {
+      id: 'x-rs44',
+      amsat: 'RS-44_[V/u]',
+      name: 'RS-44',
+      label: 'V/u',
+      mode: 'Linear SSB/CW',
+      norad: 44909,
+      satnogs: 'aaa',
+    },
+    {
+      id: 'x-digi',
+      amsat: 'GRBBeta_[UHF_Digi]',
+      name: 'GRBBeta',
+      label: 'UHF Digi',
+      mode: 'Digipeater',
+      norad: 60237,
+      satnogs: 'bbb',
+    },
+    {
+      id: 'x-dead',
+      amsat: 'Old_[TLM]',
+      name: 'Old',
+      label: 'TLM',
+      mode: 'Telemetry',
+      norad: 1,
+      satnogs: 'ccc',
+    },
+  ];
+  const satnogs = [
+    {
+      uuid: 'aaa',
+      alive: true,
+      type: 'Transponder',
+      mode: 'USB',
+      invert: true,
+      description: 'Mode V/U',
+      downlink_low: 435610000,
+      downlink_high: 435670000,
+      uplink_low: 145935000,
+      uplink_high: 145995000,
+      updated: '2024-01-02T03:04:05Z',
+      sat_id: 'SAT-1',
+    },
+    {
+      uuid: 'bbb',
+      alive: true,
+      type: 'Transceiver',
+      mode: 'GFSK',
+      invert: false,
+      description: 'Digipeater',
+      downlink_low: 436785000,
+      downlink_high: null,
+      uplink_low: 436785000,
+      uplink_high: null,
+      updated: '2025-05-06T00:00:00Z',
+      sat_id: 'SAT-2',
+    },
+    { uuid: 'ccc', alive: false, type: 'Transmitter', mode: 'CW', downlink_low: 437125000 },
+    { uuid: 'zzz', alive: true, type: 'Transmitter', mode: 'FM', downlink_low: 145800000 },
+  ];
+  const extras = summarizeTransmitters(satnogs, links, now);
+  assert.deepEqual(
+    Object.keys(extras.entries).sort(),
+    ['aaa', 'bbb'],
+    'only linked, active entries are kept',
+  );
+  const cat = extraCatalog(parseExtras(JSON.parse(JSON.stringify(extras))), links);
+  assert.equal(cat.length, 2);
+  const rs44 = cat[0];
+  assert.deepEqual(
+    [rs44.access, rs44.mode, rs44.down, rs44.downHigh, rs44.up, rs44.upHigh, rs44.inverting],
+    ['other', 'Linear SSB/CW', 435.61, 435.67, 145.935, 145.995, true],
+  );
+  assert(
+    rs44.notes.includes('SatNOGS') &&
+      rs44.notes.includes('2024-01-02') &&
+      rs44.notes.includes('not been checked by hand'),
+    'says where the data comes from',
+  );
+  assert.equal(rs44.source, 'https://db.satnogs.org/satellite/SAT-1');
+  assert.equal(cat[1].downHigh, undefined, 'a single frequency has no passband');
+  assert.deepEqual(extraCatalog(null, links), []);
+  assert.throws(() => summarizeTransmitters({ error: 'x' }, links, now));
+  const { catalog } = await import('../src/lib/catalog.ts');
+  const ids = new Set(catalog.map((s) => s.id)),
+    names = new Set(catalog.map((s) => s.amsat));
+  assert(
+    extraLinks.every((l) => !ids.has(l.id) && !names.has(l.amsat) && l.id.startsWith('x-')),
+    'no extra duplicates a hand-checked service',
+  );
+  assert.equal(new Set(extraLinks.map((l) => l.id)).size, extraLinks.length);
 });

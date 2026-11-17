@@ -15,6 +15,7 @@ import SummaryStrip from './components/summary-strip';
 import { useModalFocus } from './hooks/use-modal-focus';
 import { useOrbitData } from './hooks/use-orbit-data';
 import { catalog, band, reviewed, uncertain } from './lib/catalog';
+import { extraCatalog } from './lib/extras';
 import {
   defaultFilters as defaults,
   defaultStation,
@@ -30,7 +31,13 @@ import { reachableCatalog, localizePasses, hiddenEvents } from './lib/visibility
 
 export default function Home() {
   const modalRef = useRef<HTMLElement>(null);
-  const { elements, activity, data, fetching, load } = useOrbitData();
+  const { elements, activity, extras, data, fetching, load } = useOrbitData();
+  // Off by default: also show satellites that need more than an FM handheld (extras.ts).
+  const [allSats, setAllSats] = useState(false);
+  const fullCatalog = useMemo(
+    () => (allSats ? [...catalog, ...extraCatalog(extras)] : catalog),
+    [allSats, extras],
+  );
   const [stationConfirmed, setStationConfirmed] = useState(false);
   const [remembered, setRemembered] = useState(false); // a station was saved in this browser before
   // Optional terrain check (Iceland): off until the visitor asks, and nothing is loaded before then.
@@ -110,8 +117,8 @@ export default function Home() {
     [editing, sourceOpen, orbitSatId, stationConfirmed],
   );
   const rawResult = useMemo(
-    () => (start ? predict(elements, catalog, station, start, hours) : { passes: [], unavailable: [] }),
-    [elements, station, start, hours],
+    () => (start ? predict(elements, fullCatalog, station, start, hours) : { passes: [], unavailable: [] }),
+    [elements, fullCatalog, station, start, hours],
   );
   const result = useMemo(
     () => ({ ...rawResult, passes: localizePasses(rawResult.passes, station, hours) }),
@@ -119,10 +126,10 @@ export default function Home() {
   );
   const reachable = useMemo(() => {
     const localized = new Map(result.passes.map((p) => [p.sat.id, p.sat]));
-    return reachableCatalog(catalog, result.passes, now, filters.elevation).map(
+    return reachableCatalog(fullCatalog, result.passes, now, filters.elevation).map(
       (s) => localized.get(s.id) ?? s,
     );
-  }, [result.passes, now, filters.elevation]);
+  }, [fullCatalog, result.passes, now, filters.elevation]);
   const availableCatalog = useMemo(
     () => reachable.filter((s) => showUncertain || !uncertain(s)),
     [reachable, showUncertain],
@@ -178,10 +185,12 @@ export default function Home() {
     (s) => activeFilters.satellite === 'all' || s.id === activeFilters.satellite,
   );
   const countWork = passes.filter((p) => p.access === 'work').length,
-    countListen = passes.length - countWork;
+    countOther = passes.filter((p) => p.access === 'other').length,
+    countListen = passes.length - countWork - countOther;
   function reset() {
     setFilters(defaults);
     setShowUncertain(false);
+    setAllSats(false);
   }
   function toggleZone() {
     setUtc((v) => {
@@ -289,6 +298,12 @@ export default function Home() {
             reset={reset}
             setHours={setHours}
             setShowUncertain={setShowUncertain}
+            allSats={allSats}
+            setAllSats={(show) => {
+              setAllSats(show);
+              // These are neither Work nor Listen, so they only appear under All.
+              if (show) update('status', 'all');
+            }}
           />
           {tab === 'passes' ? (
             <>
@@ -304,6 +319,7 @@ export default function Home() {
                 activity={activity}
                 countWork={countWork}
                 countListen={countListen}
+                countOther={countOther}
                 visibleCount={visibleCount}
                 clock={clock}
                 reset={reset}

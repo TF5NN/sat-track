@@ -1,6 +1,6 @@
 import { ArrowRight, ArrowUpRight, Headphones, Radio, Satellite as SatelliteIcon } from 'lucide-react';
 import { activityFor, activityText, type Activity } from '../lib/activity';
-import { frequency, type Satellite } from '../lib/catalog';
+import { frequencyRange, type Satellite } from '../lib/catalog';
 import { defaultFilters as defaults, type Filters } from '../lib/orbit';
 
 type Props = {
@@ -35,11 +35,18 @@ export default function Guide({
         </div>
         <span className="guide-count">{filteredCatalog.length} services</span>
       </div>
-      {(['work', 'listen'] as const).map((access) => (
+      {(filteredCatalog.some((s) => s.access === 'other')
+        ? (['work', 'listen', 'other'] as const)
+        : (['work', 'listen'] as const)
+      ).map((access) => (
         <div className="guide-group" key={access}>
           <h3>
             {access === 'work' ? <Radio size={16} /> : <Headphones size={16} />}{' '}
-            {access === 'work' ? 'Satellites you can work' : 'Satellites worth listening to'}
+            {access === 'work'
+              ? 'Satellites you can work'
+              : access === 'listen'
+                ? 'Satellites worth listening to'
+                : 'Satellites for other radios'}
           </h3>
           {filteredCatalog
             .filter((s) => s.access === access)
@@ -78,10 +85,10 @@ export default function Guide({
                 </div>
                 <div className="guide-frequencies">
                   <span>
-                    RX <strong>{frequency(s.down)}</strong>
+                    RX <strong>{frequencyRange(s.down, s.downHigh)}</strong>
                   </span>
                   <span>
-                    TX <strong>{frequency(s.up)}</strong>
+                    TX <strong>{frequencyRange(s.up, s.upHigh)}</strong>
                   </span>
                   <span>
                     Tone <strong>{s.tone}</strong>

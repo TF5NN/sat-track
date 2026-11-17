@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Copy, Download, RefreshCw, X, ArrowUpRight } from 'lucide-react';
-import { frequency, sources, type Satellite } from '../lib/catalog';
+import { frequencyRange, sources, type Satellite } from '../lib/catalog';
 import type { Element } from '../lib/orbit';
 import { exportTLE, orbitUsable } from '../lib/tle-export';
 import { countUse } from '../lib/usage';
@@ -95,11 +95,11 @@ export default function OrbitDialog({
           </div>
           <div>
             <dt>Downlink · RX</dt>
-            <dd>{frequency(sat.down)} MHz</dd>
+            <dd>{frequencyRange(sat.down, sat.downHigh)} MHz</dd>
           </div>
           <div>
             <dt>Uplink · TX</dt>
-            <dd>{sat.up === null ? 'Receive only' : frequency(sat.up) + ' MHz'}</dd>
+            <dd>{sat.up === null ? 'Receive only' : frequencyRange(sat.up, sat.upHigh) + ' MHz'}</dd>
           </div>
           <div>
             <dt>TX tone</dt>

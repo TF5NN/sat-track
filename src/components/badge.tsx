@@ -1,10 +1,18 @@
-import { Headphones, Radio } from 'lucide-react';
+import { Headphones, Radio, Wrench } from 'lucide-react';
 
-export default function Badge({ access, small = false }: { access: 'work' | 'listen'; small?: boolean }) {
+type Access = 'work' | 'listen' | 'other';
+const LABEL = { work: 'Workable', listen: 'Receive only', other: 'Other radio' };
+export default function Badge({ access, small = false }: { access: Access; small?: boolean }) {
   return (
     <span className={`badge ${access} ${small ? 'small' : ''}`}>
-      {access === 'work' ? <Radio size={11} /> : <Headphones size={11} />}{' '}
-      {access === 'work' ? 'Workable' : 'Receive only'}
+      {access === 'work' ? (
+        <Radio size={11} />
+      ) : access === 'listen' ? (
+        <Headphones size={11} />
+      ) : (
+        <Wrench size={11} />
+      )}{' '}
+      {LABEL[access]}
     </span>
   );
 }

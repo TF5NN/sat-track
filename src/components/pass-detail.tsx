@@ -16,7 +16,7 @@ import Badge from './badge';
 import { SkyPlot } from './sky-plot';
 import { activityFor, activityText, type Activity } from '../lib/activity';
 import { createPassCalendar } from '../lib/calendar';
-import { band, frequency, sources } from '../lib/catalog';
+import { band, sources, frequencyRange } from '../lib/catalog';
 import { compass, doppler, pointAt, tuningSteps, type Pass, type Station, grid } from '../lib/orbit';
 import { offsetLabel, utcDate, utcTime, type Clock } from '../lib/time';
 import { ANTENNA_METRES, exactSpot, inIceland, terrainView, type Horizon } from '../lib/terrain';
@@ -105,6 +105,11 @@ export default function PassDetail({
     }
     return terrainView(samples, horizon);
   }, [horizon, rec, station, pass.aos.time, pass.los.time]);
+  // For a passband, Doppler is described for its centre.
+  const centreDown = pass.sat.downHigh ? (pass.sat.down + pass.sat.downHigh) / 2 : pass.sat.down,
+    centreUp =
+      pass.sat.up === null ? null : pass.sat.upHigh ? (pass.sat.up + pass.sat.upHigh) / 2 : pass.sat.up,
+    riseShift = doppler(rec, pass.aos.time + 1000, station, centreUp, centreDown);
   const at = inPass ? now : sample,
     current = steps.reduce((c, s) => (s.time <= at ? s : c), steps[0]);
   return (
@@ -221,7 +226,7 @@ export default function PassDetail({
               <ArrowDown size={12} /> Downlink · RX · {band(pass.sat.down)}
             </span>
             <strong>
-              {frequency(pass.sat.down)} <small>MHz</small>
+              {frequencyRange(pass.sat.down, pass.sat.downHigh)} <small>MHz</small>
             </strong>
           </div>
           <div>
@@ -229,73 +234,93 @@ export default function PassDetail({
               <ArrowUp size={12} /> Uplink · TX · {band(pass.sat.up) === 'none' ? '—' : band(pass.sat.up)}
             </span>
             <strong>
-              {frequency(pass.sat.up)} {pass.sat.up && <small>MHz</small>}
+              {frequencyRange(pass.sat.up, pass.sat.upHigh)} {pass.sat.up && <small>MHz</small>}
             </strong>
           </div>
         </div>
-        <p className="tone">
-          TX tone <strong>{pass.sat.tone}</strong> <span>· RX tone off</span>
-        </p>
-      </div>
-      <div className="detail-section">
-        <div className="section-label">
-          DOPPLER TUNING <span>{inPass ? 'LIVE' : time(sample, true) + ' ' + zoneName()}</span>
-        </div>
-        {!inPass && (
-          <label className="scrubber">
-            <span>Rise</span>
-            <input
-              type="range"
-              aria-label="Preview Doppler across pass"
-              min="0"
-              max="100"
-              value={t}
-              onChange={(e) => setT(Number(e.target.value))}
-            />
-            <span>Set</span>
-          </label>
+        {!(pass.sat.access === 'other' && pass.sat.tone === 'None') && (
+          <p className="tone">
+            TX tone <strong>{pass.sat.tone}</strong> <span>· RX tone off</span>
+          </p>
         )}
-        <div className="tuned">
-          <div>
-            <span>Receive</span>
-            <strong>{current.rx.toFixed(3)}</strong>
-          </div>
-          <div>
-            <span>{pass.sat.up ? 'Transmit' : 'No uplink'}</span>
-            <strong>{current.tx?.toFixed(3) ?? '—'}</strong>
-          </div>
-        </div>
-        <p className="fine">
-          Radio setting in MHz. Exact: RX {d.rx.toFixed(5)}
-          {d.tx !== null ? ` / TX ${d.tx.toFixed(5)}` : ''}.{' '}
-          {live && `${Math.round(live.az)}° ${compass(live.az)} / ${live.el.toFixed(1)}° el.`}
-        </p>
-        <table className="doppler-table">
-          <thead>
-            <tr>
-              <th>From ({zoneName()})</th>
-              <th>RX MHz</th>
-              <th>TX MHz</th>
-            </tr>
-          </thead>
-          <tbody>
-            {steps.map((s) => (
-              <tr key={s.time} className={s === current ? 'current' : ''}>
-                <td>{time(s.time, true)}</td>
-                <td>{s.rx.toFixed(3)}</td>
-                <td>{s.tx?.toFixed(3) ?? '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="fine">
-          {steps.length === 1
-            ? 'No retuning needed on this pass: the Doppler drift stays within 3.5 kHz.'
-            : `${steps.length} settings for this pass.`}{' '}
-          The radio is retuned in 5 kHz steps only when the drift passes 3.5 kHz, so lower passes need fewer
-          changes and 2 m rarely needs any. HT app Doppler control is available with compatible firmware.
-        </p>
       </div>
+      {pass.sat.downHigh ? (
+        <div className="detail-section">
+          <div className="section-label">
+            DOPPLER <span>PASSBAND</span>
+          </div>
+          <p className="fine">
+            A linear transponder is tuned by ear across its passband, not in steps. On this pass the downlink
+            arrives {Math.abs((riseShift.rx - centreDown) * 1000).toFixed(1)} kHz high at rise and the same
+            amount low at set
+            {riseShift.tx !== null && centreUp !== null
+              ? `; the uplink needs the opposite, ${Math.abs((riseShift.tx - centreUp) * 1000).toFixed(1)} kHz at the ends`
+              : ''}
+            . {pass.sat.inverting ? 'It is inverting: tuning the uplink up moves you down the downlink.' : ''}{' '}
+            {live && `${Math.round(live.az)}° ${compass(live.az)} / ${live.el.toFixed(1)}° el.`}
+          </p>
+        </div>
+      ) : (
+        <div className="detail-section">
+          <div className="section-label">
+            DOPPLER TUNING <span>{inPass ? 'LIVE' : time(sample, true) + ' ' + zoneName()}</span>
+          </div>
+          {!inPass && (
+            <label className="scrubber">
+              <span>Rise</span>
+              <input
+                type="range"
+                aria-label="Preview Doppler across pass"
+                min="0"
+                max="100"
+                value={t}
+                onChange={(e) => setT(Number(e.target.value))}
+              />
+              <span>Set</span>
+            </label>
+          )}
+          <div className="tuned">
+            <div>
+              <span>Receive</span>
+              <strong>{current.rx.toFixed(3)}</strong>
+            </div>
+            <div>
+              <span>{pass.sat.up ? 'Transmit' : 'No uplink'}</span>
+              <strong>{current.tx?.toFixed(3) ?? '—'}</strong>
+            </div>
+          </div>
+          <p className="fine">
+            Radio setting in MHz. Exact: RX {d.rx.toFixed(5)}
+            {d.tx !== null ? ` / TX ${d.tx.toFixed(5)}` : ''}.{' '}
+            {live && `${Math.round(live.az)}° ${compass(live.az)} / ${live.el.toFixed(1)}° el.`}
+          </p>
+          <table className="doppler-table">
+            <thead>
+              <tr>
+                <th>From ({zoneName()})</th>
+                <th>RX MHz</th>
+                <th>TX MHz</th>
+              </tr>
+            </thead>
+            <tbody>
+              {steps.map((s) => (
+                <tr key={s.time} className={s === current ? 'current' : ''}>
+                  <td>{time(s.time, true)}</td>
+                  <td>{s.rx.toFixed(3)}</td>
+                  <td>{s.tx?.toFixed(3) ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="fine">
+            {steps.length === 1
+              ? 'No retuning needed on this pass: the Doppler drift stays within 3.5 kHz.'
+              : `${steps.length} settings for this pass.`}{' '}
+            The radio is retuned in 5 kHz steps only when the drift passes 3.5 kHz, so lower passes need fewer
+            changes and 2 m rarely needs any. HT app Doppler control is available with compatible firmware.
+          </p>
+        </div>
+      )}
       {heard?.warning && (
         <div className="not-heard" role="note">
           <Info size={15} />

@@ -2727,3 +2727,11 @@ footer > button {
   border: 3px solid #fff;
   box-shadow: 0 1px 4px #0006;
 }
+/* Satellites that need more than an FM handheld. */
+.badge.other {
+  background: #f0ebe0;
+  color: #8a7448;
+}
+.list-legend i.other {
+  background: #b59a62;
+}

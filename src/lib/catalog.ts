@@ -3,10 +3,18 @@ export type Satellite = {
   name: string;
   subtitle: string;
   norad: number;
-  access: 'work' | 'listen';
-  mode: 'FM voice' | 'APRS' | 'SSTV';
+  // 'other' = needs equipment beyond an FM handheld; only shown when the visitor asks for all satellites.
+  access: 'work' | 'listen' | 'other';
+  mode: 'FM voice' | 'APRS' | 'SSTV' | 'Linear SSB/CW' | 'Digipeater' | 'Digital' | 'Telemetry' | 'SSDV';
   up: number | null;
   down: number;
+  // A linear transponder has a passband: down and up are its lower edges, these the upper ones.
+  downHigh?: number;
+  upHigh?: number;
+  inverting?: boolean;
+  // Set on entries built from the SatNOGS database (see extras.ts): when SatNOGS last changed them.
+  satnogsUpdated?: string;
+  tag?: string; // AMSAT's own tag for the service, such as "U/v" or "UHF Digi", to tell services apart
   tone: string;
   condition: string;
   notes: string;
@@ -30,6 +38,8 @@ export const sources = {
     'https://www.informatik.uni-wuerzburg.de/raumfahrttechnik/projekte/aktive/sonate-2/information-fuer-funkamateure/',
   tle: 'https://www.amsat.org/tle/current/nasabare.txt',
   satnogs: 'https://db.satnogs.org/api/tle/',
+  satnogsTransmitters: 'https://db.satnogs.org/api/transmitters/?format=json',
+  satnogsDb: 'https://db.satnogs.org/',
   radioAprs:
     'https://www.verotelecom.com/Topics/VR-N76-APRS-Setup-Guide-Mastering-SSID-Path-Smart-Beaconing-tp30147.html',
   radio:
@@ -383,5 +393,11 @@ export const catalog: Satellite[] = [
 ];
 export const uncertain = (s: Satellite) =>
   !!s.uncertain || s.id.startsWith('tevel') || ['po101', 'rs95-fm', 'lilac'].includes(s.id);
-export const band = (f: number | null) => (f === null ? 'none' : f < 200 ? '2m' : '70cm');
+export const band = (f: number | null) =>
+  f === null ? 'none' : f < 30.1 ? '10m' : f < 200 ? '2m' : f < 500 ? '70cm' : 'microwave';
+export const bandLabel = (b: string) =>
+  ({ none: 'No uplink', '10m': '10 m', '2m': '2 m', '70cm': '70 cm', microwave: 'Microwave' })[b] ?? b;
 export const frequency = (f: number | null) => (f === null ? '—' : f.toFixed(3));
+/** A single frequency, or a passband as "435.610–435.670". */
+export const frequencyRange = (low: number | null, high?: number) =>
+  low === null ? '—' : high && high !== low ? `${low.toFixed(3)}–${high.toFixed(3)}` : low.toFixed(3);

@@ -1,5 +1,5 @@
 import { ArrowUpRight, Radio, SlidersHorizontal } from 'lucide-react';
-import { band, sources, type Satellite } from '../lib/catalog';
+import { band, bandLabel, sources, type Satellite } from '../lib/catalog';
 import type { Filters } from '../lib/orbit';
 
 type Props = {
@@ -9,10 +9,12 @@ type Props = {
   options: Satellite[];
   hours: number;
   showUncertain: boolean;
+  allSats: boolean; // also show satellites that need more than an FM handheld
   update: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
   reset: () => void;
   setHours: (hours: number) => void;
   setShowUncertain: (show: boolean) => void;
+  setAllSats: (show: boolean) => void;
 };
 export default function FiltersPanel({
   filters,
@@ -21,10 +23,12 @@ export default function FiltersPanel({
   options,
   hours,
   showUncertain,
+  allSats,
   update,
   reset,
   setHours,
   setShowUncertain,
+  setAllSats,
 }: Props) {
   return (
     <aside className="filters" aria-label="Pass filters">
@@ -64,7 +68,7 @@ export default function FiltersPanel({
           <option value="all">All reachable satellites</option>
           {options.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.name} · {s.mode}
+              {s.name} · {s.tag ?? s.mode}
               {s.id === 'rs95-sstv' ? ' images' : ''}
             </option>
           ))}
@@ -79,11 +83,11 @@ export default function FiltersPanel({
             onChange={(e) => update('uplink', e.target.value)}
           >
             <option value="all">Any band</option>
-            {['2m', '70cm', 'none']
+            {['10m', '2m', '70cm', 'microwave', 'none']
               .filter((b) => availableCatalog.some((s) => band(s.up) === b))
               .map((b) => (
                 <option key={b} value={b}>
-                  {b === 'none' ? 'No uplink' : b === '2m' ? '2 m' : '70 cm'}
+                  {bandLabel(b)}
                 </option>
               ))}
           </select>
@@ -96,11 +100,11 @@ export default function FiltersPanel({
             onChange={(e) => update('downlink', e.target.value)}
           >
             <option value="all">Any band</option>
-            {['2m', '70cm']
+            {['10m', '2m', '70cm', 'microwave']
               .filter((b) => availableCatalog.some((s) => band(s.down) === b))
               .map((b) => (
                 <option key={b} value={b}>
-                  {b === '2m' ? '2 m' : '70 cm'}
+                  {bandLabel(b)}
                 </option>
               ))}
           </select>
@@ -110,7 +114,7 @@ export default function FiltersPanel({
         MODE
         <select aria-label="Mode" value={filters.mode} onChange={(e) => update('mode', e.target.value)}>
           <option value="all">All modes</option>
-          {['FM voice', 'APRS', 'SSTV']
+          {['FM voice', 'APRS', 'SSTV', 'Linear SSB/CW', 'Digipeater', 'Digital', 'Telemetry', 'SSDV']
             .filter((m) => availableCatalog.some((s) => s.mode === m))
             .map((m) => (
               <option key={m}>{m}</option>
@@ -146,6 +150,13 @@ export default function FiltersPanel({
         <input type="checkbox" checked={showUncertain} onChange={(e) => setShowUncertain(e.target.checked)} />
         <span>
           Include uncertain repeaters<small>Only those reachable from your station</small>
+        </span>
+      </label>
+      <label className="check-field">
+        <input type="checkbox" checked={allSats} onChange={(e) => setAllSats(e.target.checked)} />
+        <span>
+          Show satellites for other radios
+          <small>SSB/CW, data and telemetry. Frequencies from SatNOGS, not checked by hand</small>
         </span>
       </label>
       <div className="station-note">

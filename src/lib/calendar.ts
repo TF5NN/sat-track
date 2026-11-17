@@ -1,4 +1,4 @@
-import type { Satellite } from './catalog';
+import { frequencyRange, type Satellite } from './catalog';
 
 type CalendarPass = {
   key: string;
@@ -42,8 +42,8 @@ function fold(line: string): string {
 export function createPassCalendar(pass: CalendarPass, generatedAt = Date.now()): string {
   const { sat } = pass;
   const description = [
-    `RX: ${sat.down.toFixed(3)} MHz`,
-    ...(sat.up === null ? [] : [`TX: ${sat.up.toFixed(3)} MHz`]),
+    `RX: ${frequencyRange(sat.down, sat.downHigh)} MHz`,
+    ...(sat.up === null ? [] : [`TX: ${frequencyRange(sat.up, sat.upHigh)} MHz`]),
     ...(sat.up !== null && !/^none\b/i.test(sat.tone.trim()) && sat.tone.trim()
       ? [`CTCSS (TX): ${sat.tone}`]
       : []),

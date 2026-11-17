@@ -15,6 +15,7 @@ A small, static amateur-satellite planner designed for the VGC VR-N76 and a 2 m 
 - Lists Doppler settings as 5 kHz radio steps, only as many as the pass needs (retune when the drift passes 3.5 kHz).
 - Uses one reachable-service set for pass lists, satellite choices, the guide and orbital-data controls. A service needs a remaining modeled operating window in the selected 24/48/72 hours at the selected minimum peak elevation.
 - Separates compatible FM voice / 1200-baud AFSK APRS operation from receive-only APRS and FM SSTV.
+- **Show satellites for other radios** (off by default) adds linear transponders, data digipeaters, telemetry beacons and picture downlinks, marked "Other radio". Their frequencies come from the SatNOGS database, not from the hand-checked catalogue.
 - Optional extras that load nothing until asked for: a **Map** tab for choosing an exact spot, and, in Iceland, **Check terrain**, which shades the ground on the sky plot, dots the part of the track behind it and gives the times the satellite clears and drops behind the terrain. The terrain data and calculation live in [TF5NN/terrain](https://github.com/TF5NN/terrain).
 - During a pass, shows the live heading and elevation in large figures beside the sky plot, with whether the satellite is rising or falling.
 - Shows UTC timing, true bearings, sky paths, frequencies, CTCSS, Doppler guidance and concise source-linked notes.
@@ -51,7 +52,7 @@ Design decisions, the reasons behind the defaults and open items are recorded in
 - `src/hooks/` loads and refreshes the orbital data and handles keyboard focus inside dialogs.
 - `src/lib/` is the calculation and data code (orbits, catalogue, time formatting, AMSAT reports, calendar and TLE export), covered by `npm test`.
 
-`npm run test:ui -- write` records the built app's HTML across 63 steps (dialogs, filters, a live pass, phone layout, clock and data warnings) with a frozen clock; `npm run test:ui -- check` compares a later build against it. Use it around changes that must not alter the page. It needs Playwright with Chromium and is not part of `npm test` or CI.
+`npm run test:ui -- write` records the built app's HTML across 67 steps (dialogs, filters, a live pass, phone layout, clock and data warnings) with a frozen clock; `npm run test:ui -- check` compares a later build against it. Use it around changes that must not alter the page. It needs Playwright with Chromium and is not part of `npm test` or CI.
 
 The build is ordinary static HTML/CSS/JavaScript in `dist/`. It needs no backend, accounts, database or runtime secrets.
 
@@ -62,6 +63,7 @@ The build is ordinary static HTML/CSS/JavaScript in `dist/`. It needs no backend
 - AMSAT: https://www.amsat.org/tle/current/nasabare.txt
 - SatNOGS supplementary TLEs: https://db.satnogs.org/api/tle/
 - AMSAT status report summary (CC BY 4.0), 7-day window, one request: https://status.amsat.org/api/v1/summary.php
+- SatNOGS transmitter database (CC BY-SA 4.0), for the satellites in `src/lib/extras.ts`: https://db.satnogs.org/api/transmitters/
 - CelesTrak amateur elements if AMSAT fails: https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle
 
 The updater validates TLE checksums and matching IDs, epoch age, plausible orbital parameters and successful propagation. It resolves followed SatNOGS IDs from the TLE columns and retains the newest valid set per listed spacecraft. Previous valid elements fill gaps in partial downloads. Failed downloads do not overwrite the published dataset. Publication is blocked only when none of the core spacecraft has valid elements. Any individual spacecraft without valid elements, core or not, is recorded, logged as a warning and hidden in the app, so a re-entered or untracked satellite cannot stop the daily update.
@@ -82,6 +84,12 @@ npm run validate:data
 `src/lib/catalog.ts` is a separately reviewed list of compatible services, frequencies, tones, operating restrictions and primary source links. Daily TLE synchronisation does **not** verify RF activity or update frequencies, tones or event schedules. Review operator / AMSAT announcements when editing it. Dated events and blackouts are applied to predictions automatically. Do not add SSB/CW, incompatible digital modulation or microwave-only services to this FM handheld catalogue.
 
 Tests use the fixed November 2026 fixture in `tests/fixtures/`; daily published data changes do not alter historical prediction tests. JAMX01 has a catalogue entry but is hidden until a valid current orbit is available. CelesTrak's TLE feed cannot supply all newer six-digit IDs; additional format support may be needed for future catalogue expansion.
+
+### Satellites for other radios
+
+`src/lib/extras.ts` holds one line per extra service: which AMSAT status entry corresponds to which entry in the SatNOGS database. Nothing else about them is typed in. The daily job reads frequency, mode and passband for those entries from SatNOGS and saves them in `public/data/orbits.json` under `extras`; that part of the file is derived from SatNOGS data and is under CC BY-SA 4.0. An entry SatNOGS marks inactive drops out by itself, and one without current orbital elements is hidden.
+
+To add a satellite, add its line with the SatNOGS transmitter `uuid`. `docs/satellite-links.json` records how the current links were checked (17 November 2026), including the ones held back: three with typed frequencies and unconfirmed catalogue numbers (AO-129, SO-131, PARUS-6U1), six marked unsure, and the music, microwave and geostationary entries left out on purpose.
 
 ## GitHub Pages and domain
 

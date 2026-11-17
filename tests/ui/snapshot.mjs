@@ -303,6 +303,21 @@ async function open(name, options = {}, time = clockAt, prepare) {
   await snap('05 a grid square is not exact enough');
   await close();
 }
+// ---- Satellites for other radios: off by default, then switched on
+{
+  const { page, snap, tick, close } = await open('other radios');
+  await page.getByRole('button', { name: 'Use Reykjavík default' }).click();
+  await tick(1000);
+  await page.getByLabel(/Show satellites for other radios/).check();
+  await snap('01 switched on');
+  await page.getByLabel('Mode').selectOption('Linear SSB/CW');
+  await snap('02 linear transponders only');
+  await page.getByRole('button', { name: 'Satellite guide' }).click();
+  await snap('03 guide');
+  await page.getByRole('button', { name: 'Reset', exact: true }).click();
+  await snap('04 reset switches it off');
+  await close();
+}
 // ---- "Use my location": the device reports London; then a device that refuses
 {
   const { page, snap, tick, close } = await open('location', {

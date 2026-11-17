@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import bundledData from '../../public/data/orbits.json';
 import { parseActivity, type Activity } from '../lib/activity';
+import { parseExtras, type Extras } from '../lib/extras';
 import { parseBundle } from '../lib/orbital-data';
 import type { Element } from '../lib/orbit';
 
@@ -22,6 +23,7 @@ export function useOrbitData() {
       provider: initialData.bundle.provider,
     });
   const [activity, setActivity] = useState<Activity | null>(() => parseActivity(initialData.bundle.activity));
+  const [extras, setExtras] = useState<Extras | null>(() => parseExtras(initialData.bundle.extras));
   async function load() {
     lastRefresh.current = Date.now();
     setFetching(true);
@@ -47,6 +49,7 @@ export function useOrbitData() {
     )[0];
     setElements(chosen.elements);
     setActivity(parseActivity(chosen.bundle.activity));
+    setExtras(parseExtras(chosen.bundle.extras));
     setData({
       kind: downloaded ? 'published' : chosen === initialData ? 'bundled' : 'cached',
       fetchedAt: chosen.bundle.fetchedAt,
@@ -70,5 +73,5 @@ export function useOrbitData() {
       document.removeEventListener('visibilitychange', resume);
     };
   }, []);
-  return { elements, activity, data, fetching, load };
+  return { elements, activity, extras, data, fetching, load };
 }

@@ -1,6 +1,6 @@
 import { twoline2satrec, propagate, gstime, eciToEcf, ecfToLookAngles, jday } from 'satellite.js';
 import type { SatRec } from 'satellite.js';
-import type { Satellite } from './catalog';
+import { band, type Satellite } from './catalog';
 // `locator` is the grid square shown for the station. Without `exact`, the position is that square's
 // centre; with it (from "Use my location"), lat and lon are the device's own position.
 export type Station = { lat: number; lon: number; height: number; locator?: string; exact?: boolean };
@@ -15,7 +15,7 @@ export type Pass = {
   los: Point;
   track: Point[];
   windows: [number, number][];
-  access: 'work' | 'listen';
+  access: 'work' | 'listen' | 'other';
 };
 export const defaultStation: Station = { lat: 64.1466, lon: -21.9426, height: 30 };
 const DEG = 180 / Math.PI,
@@ -221,7 +221,12 @@ export function predict(
               peak,
               track,
               windows: limited,
-              access: sat.access === 'work' && limited.length ? 'work' : 'listen',
+              access:
+                sat.access === 'other'
+                  ? 'other'
+                  : sat.access === 'work' && limited.length
+                    ? 'work'
+                    : 'listen',
             });
           }
         }
@@ -259,8 +264,8 @@ export function filterPasses(passes: Pass[], f: Filters, now: number) {
       p.los.time > now &&
       (f.status === 'all' || p.access === f.status) &&
       (f.satellite === 'all' || p.sat.id === f.satellite) &&
-      (f.uplink === 'all' || (p.sat.up === null ? 'none' : p.sat.up < 200 ? '2m' : '70cm') === f.uplink) &&
-      (f.downlink === 'all' || (p.sat.down < 200 ? '2m' : '70cm') === f.downlink) &&
+      (f.uplink === 'all' || band(p.sat.up) === f.uplink) &&
+      (f.downlink === 'all' || band(p.sat.down) === f.downlink) &&
       (f.mode === 'all' || p.sat.mode === f.mode) &&
       p.peak.el >= f.elevation,
   );
