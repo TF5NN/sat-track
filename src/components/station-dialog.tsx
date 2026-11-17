@@ -41,9 +41,13 @@ export default function StationDialog({
   const [error, setError] = useState('');
   const [locating, setLocating] = useState(false);
   const [found, setFound] = useState('');
+  // The device's own position from "Use my location". It is kept exactly, even though a grid square is shown.
+  const [gps, setGps] = useState<{ lat: number; lon: number } | null>(
+    !blank && station.exact ? { lat: station.lat, lon: station.lon } : null,
+  );
   const cell = parseLocator(locator);
-  // Ask the device where it is, only when the visitor presses the button. The position is turned
-  // into a 6-character grid square here in the browser and is never sent anywhere.
+  // Ask the device where it is, only when the visitor presses the button. The exact position is
+  // kept in this browser, shown as a 6-character grid square, and never sent anywhere.
   function locate() {
     if (locating) return;
     countUse('use-my-location');
@@ -56,16 +60,18 @@ export default function StationDialog({
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const square = locatorFor(position.coords.latitude, position.coords.longitude).toUpperCase();
+        const here = {
+          lat: Number(position.coords.latitude.toFixed(5)),
+          lon: Number(position.coords.longitude.toFixed(5)),
+        };
+        const square = locatorFor(here.lat, here.lon).toUpperCase();
+        setGps(here);
+        setPin(here);
         setLocator(square);
-        if (method === 'map') {
-          // On the map the exact position is kept, since that is what the map is for.
-          setPin({ lat: position.coords.latitude, lon: position.coords.longitude });
-          setFound(`Your device reports this spot, in ${square}. Check it, then confirm below.`);
-        } else {
-          setMethod('grid');
-          setFound(`Your device reports ${square}. Check it, then confirm below.`);
-        }
+        if (method !== 'map') setMethod('grid');
+        setFound(
+          `Your device reports ${square}. Your exact position is kept with it. Check it, then confirm below.`,
+        );
         setLocating(false);
       },
       (failure) => {
@@ -148,7 +154,10 @@ export default function StationDialog({
         setError('Enter a valid 4-, 6- or 8-character grid, such as HP94, HP94ad or HP94ad25.');
         return;
       }
-      onSave({ lat: cell.lat, lon: cell.lon, height: h, locator: cell.locator });
+      // If the square shown is the one the device reported, keep the device's exact position with it.
+      if (gps && locatorFor(gps.lat, gps.lon).toUpperCase() === cell.locator.slice(0, 6))
+        onSave({ lat: gps.lat, lon: gps.lon, height: h, locator: cell.locator, exact: true });
+      else onSave({ lat: cell.lat, lon: cell.lon, height: h, locator: cell.locator });
     } else {
       if (
         !lat.trim() ||

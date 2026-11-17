@@ -14,6 +14,10 @@ test('the terrain check is offered only inside Iceland and only for an exact spo
     !exactSpot({ lat: 64.13, lon: -21.92, height: 30, locator: 'HP94AD' }),
     'a grid square is not exact',
   );
+  assert(
+    exactSpot({ lat: 64.1293, lon: -21.919, height: 30, locator: 'HP94AD', exact: true }),
+    'a grid square with the device position kept is exact',
+  );
 });
 
 test('the horizon is blended between directions and wraps at north', () => {

@@ -24,7 +24,7 @@ import {
   type Station,
 } from './lib/orbit';
 import { dateYear, makeClock } from './lib/time';
-import { exactSpot, inIceland, loadHorizon, type Horizon } from './lib/terrain';
+import { ANTENNA_METRES, exactSpot, inIceland, loadHorizon, type Horizon } from './lib/terrain';
 import { countUse } from './lib/usage';
 import { reachableCatalog, localizePasses, hiddenEvents } from './lib/visibility';
 
@@ -79,7 +79,13 @@ export default function Home() {
         s.height >= -500 &&
         s.height <= 9000
       ) {
-        setStation({ ...s, locator: typeof s.locator === 'string' ? s.locator : undefined });
+        setStation({
+          lat: s.lat,
+          lon: s.lon,
+          height: s.height,
+          locator: typeof s.locator === 'string' ? s.locator : undefined,
+          exact: s.exact === true ? true : undefined,
+        });
         setRemembered(true);
       }
     } catch {}
@@ -208,7 +214,20 @@ export default function Home() {
     if (!terrainOn || !inIceland(station) || !exactSpot(station)) return;
     let stale = false;
     loadHorizon(station).then(
-      (h) => !stale && setHorizon(h),
+      (h) => {
+        if (stale) return;
+        setHorizon(h);
+        // The horizon is worked out from the ground at the spot plus a 2 m antenna, so the
+        // station's height is set to match. The pass panel says so.
+        const height = Math.round(h.groundMetres) + ANTENNA_METRES;
+        if (station.height !== height) {
+          const updated = { ...station, height };
+          setStation(updated);
+          try {
+            localStorage.setItem('northbound-station', JSON.stringify(updated));
+          } catch {}
+        }
+      },
       (e: unknown) =>
         !stale &&
         setTerrainError(
@@ -220,7 +239,8 @@ export default function Home() {
     return () => {
       stale = true;
     };
-  }, [terrainOn, station]);
+    // Only a change of place needs a new horizon; the height update above must not start one.
+  }, [terrainOn, station.lat, station.lon, station.locator, station.exact]);
   const orbitSat = availableCatalog.find((s) => s.id === orbitSatId);
   return (
     <div className="app-shell">

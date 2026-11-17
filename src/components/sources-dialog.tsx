@@ -125,18 +125,19 @@ export default function SourcesDialog({ data, now, result, modalRef, setSourceOp
           ))}
         <p>
           Maidenhead entry accepts 4, 6 or 8 characters and uses the grid-cell centre. Your device’s location
-          is requested only if you press “Use my location”; it is turned into a 6-character grid square in
-          this browser and never sent anywhere. No automatic radio control. Each opening asks you to confirm
-          your remembered station; a first visit starts with an empty grid field, with Reykjavík offered as a
-          default. Station coordinates stay in this browser; requests for the shared data file do not include
-          them. No account or backend is required.
+          is requested only if you press “Use my location”; the exact position is kept in this browser, shown
+          as a 6-character grid square, and never sent anywhere. No automatic radio control. Each opening asks
+          you to confirm your remembered station; a first visit starts with an empty grid field, with
+          Reykjavík offered as a default. Station coordinates stay in this browser; requests for the shared
+          data file do not include them. No account or backend is required.
         </p>
         <p>
           Two extras load outside data, and only if you ask for them. The Map tab of the station dialog
           fetches map tiles from OpenStreetMap for the area you look at. “Check terrain”, offered in Iceland,
           fetches terrain files for the ground around your spot from my own site (made from ArcticDEM, Polar
-          Geospatial Center) and shades the ground on the sky plot. It is approximate: good to a few seconds
-          of pass time, leaning towards showing more blocking, and it knows nothing of buildings or trees.
+          Geospatial Center) and shades the ground on the sky plot. It works from 2 m above the ground at your
+          spot and sets your station height to match. It is approximate: good to a few seconds of pass time,
+          leaning towards showing more blocking, and it knows nothing of buildings or trees.
         </p>
         <p>
           Visits are counted anonymously with GoatCounter, to see whether the planner is used: page opens by

@@ -6,7 +6,7 @@ A small, static amateur-satellite planner designed for the VGC VR-N76 and a 2 m 
 
 ## What it does
 
-- Asks for a Maidenhead grid square (4, 6 or 8 characters) on opening, with coordinates as a second tab. A first visit starts with an empty field; "Use my location" fills in the device's 6-character square, and Reykjavík is offered as a default. The last station is remembered in that browser and shown as a grid square.
+- Asks for a Maidenhead grid square (4, 6 or 8 characters) on opening, with coordinates as a second tab. A first visit starts with an empty field; "Use my location" fills in the device's 6-character square and keeps the exact position with it, and Reykjavík is offered as a default. The last station is remembered in that browser and shown as a grid square.
 - Calculates passes on the visitor's device with satellite.js / SGP4.
 - Opens on the services the station can work (FM voice and APRS) from a 5° peak; receive-only services are one tap away under All / Listen.
 - Shows pass times in device-local time with UTC alongside, with a switch to UTC; the choice is remembered.
@@ -91,7 +91,7 @@ A later personal-site domain can retain `/sat-track/`; changing the hostname doe
 
 ## Data and privacy
 
-Station coordinates and pass calculations stay in the browser. The shared data-file request contains no station coordinates. The Map tab fetches OpenStreetMap tiles for the area viewed, and "Check terrain" fetches terrain files around the station from `tf5nn.github.io/terrain`; neither happens unless the visitor opens the map or presses the button. The device's location is requested only when "Use my location" is pressed; it is turned into a 6-character grid square in the browser and never sent anywhere. No authentication is used.
+Station coordinates and pass calculations stay in the browser. The shared data-file request contains no station coordinates. The Map tab fetches OpenStreetMap tiles for the area viewed, and "Check terrain" fetches terrain files around the station from `tf5nn.github.io/terrain`; neither happens unless the visitor opens the map or presses the button. The device's location is requested only when "Use my location" is pressed; the exact position is kept in the browser, shown as a 6-character grid square, and never sent anywhere. No authentication is used.
 
 Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com/) (site code `tf5nn`, private dashboard): page opens by country and referring site, plus six actions (`save-pass`, `event-show-passes`, `download-tle`, the header links `main-site-from-northbound` and `github-from-northbound`, and `use-my-location`, which records the press only, never the location). No cookies are set and nothing about the station is sent. The counter script loads separately from the app, so the planner works the same if it is blocked. Local previews are not counted. To leave your own visits out, open the app once with `#toggle-goatcounter` at the end of the address in each browser you use. The stylesheet loads DM Sans and IBM Plex Mono from Google Fonts, with local fallback fonts.
 
