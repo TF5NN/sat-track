@@ -132,6 +132,13 @@ export default function SourcesDialog({ data, now, result, modalRef, setSourceOp
           them. No account or backend is required.
         </p>
         <p>
+          Two extras load outside data, and only if you ask for them. The Map tab of the station dialog
+          fetches map tiles from OpenStreetMap for the area you look at. “Check terrain”, offered in Iceland,
+          fetches terrain files for the ground around your spot from my own site (made from ArcticDEM, Polar
+          Geospatial Center) and shades the ground on the sky plot. It is approximate: good to a few seconds
+          of pass time, leaning towards showing more blocking, and it knows nothing of buildings or trees.
+        </p>
+        <p>
           Visits are counted anonymously with GoatCounter, to see whether the planner is used: page opens by
           country and referring site, plus how often a pass is saved, an event banner is followed, orbital
           data is downloaded, a header link to my site or GitHub is used, or the location button is pressed

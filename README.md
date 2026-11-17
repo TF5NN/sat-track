@@ -15,6 +15,7 @@ A small, static amateur-satellite planner designed for the VGC VR-N76 and a 2 m 
 - Lists Doppler settings as 5 kHz radio steps, only as many as the pass needs (retune when the drift passes 3.5 kHz).
 - Uses one reachable-service set for pass lists, satellite choices, the guide and orbital-data controls. A service needs a remaining modeled operating window in the selected 24/48/72 hours at the selected minimum peak elevation.
 - Separates compatible FM voice / 1200-baud AFSK APRS operation from receive-only APRS and FM SSTV.
+- Optional extras that load nothing until asked for: a **Map** tab for choosing an exact spot, and, in Iceland, **Check terrain**, which shades the ground on the sky plot, dots the part of the track behind it and gives the times the satellite clears and drops behind the terrain. The terrain data and calculation live in [TF5NN/terrain](https://github.com/TF5NN/terrain).
 - During a pass, shows the live heading and elevation in large figures beside the sky plot, with whether the satellite is rising or falling.
 - Shows UTC timing, true bearings, sky paths, frequencies, CTCSS, Doppler guidance and concise source-linked notes.
 - Exports calendar events with the station's grid square, radio settings, operating notes and source links, plus current TLE lines for manual entry in the HT app.
@@ -50,7 +51,7 @@ Design decisions, the reasons behind the defaults and open items are recorded in
 - `src/hooks/` loads and refreshes the orbital data and handles keyboard focus inside dialogs.
 - `src/lib/` is the calculation and data code (orbits, catalogue, time formatting, AMSAT reports, calendar and TLE export), covered by `npm test`.
 
-`npm run test:ui -- write` records the built app's HTML across 59 steps (dialogs, filters, a live pass, phone layout, clock and data warnings) with a frozen clock; `npm run test:ui -- check` compares a later build against it. Use it around changes that must not alter the page. It needs Playwright with Chromium and is not part of `npm test` or CI.
+`npm run test:ui -- write` records the built app's HTML across 63 steps (dialogs, filters, a live pass, phone layout, clock and data warnings) with a frozen clock; `npm run test:ui -- check` compares a later build against it. Use it around changes that must not alter the page. It needs Playwright with Chromium and is not part of `npm test` or CI.
 
 The build is ordinary static HTML/CSS/JavaScript in `dist/`. It needs no backend, accounts, database or runtime secrets.
 
@@ -90,7 +91,7 @@ A later personal-site domain can retain `/sat-track/`; changing the hostname doe
 
 ## Data and privacy
 
-Station coordinates and pass calculations stay in the browser. The shared data-file request contains no station coordinates. The device's location is requested only when "Use my location" is pressed; it is turned into a 6-character grid square in the browser and never sent anywhere. No authentication is used.
+Station coordinates and pass calculations stay in the browser. The shared data-file request contains no station coordinates. The Map tab fetches OpenStreetMap tiles for the area viewed, and "Check terrain" fetches terrain files around the station from `tf5nn.github.io/terrain`; neither happens unless the visitor opens the map or presses the button. The device's location is requested only when "Use my location" is pressed; it is turned into a 6-character grid square in the browser and never sent anywhere. No authentication is used.
 
 Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com/) (site code `tf5nn`, private dashboard): page opens by country and referring site, plus six actions (`save-pass`, `event-show-passes`, `download-tle`, the header links `main-site-from-northbound` and `github-from-northbound`, and `use-my-location`, which records the press only, never the location). No cookies are set and nothing about the station is sent. The counter script loads separately from the app, so the planner works the same if it is blocked. Local previews are not counted. To leave your own visits out, open the app once with `#toggle-goatcounter` at the end of the address in each browser you use. The stylesheet loads DM Sans and IBM Plex Mono from Google Fonts, with local fallback fonts.
 

@@ -1,6 +1,15 @@
 import { compass, type Pass } from '../lib/orbit';
+import { horizonAngle, type Horizon } from '../lib/terrain';
 
-export function SkyPlot({ pass, live }: { pass: Pass; live?: { az: number; el: number } | null }) {
+export function SkyPlot({
+  pass,
+  live,
+  horizon,
+}: {
+  pass: Pass;
+  live?: { az: number; el: number } | null;
+  horizon?: Horizon | null; // optional terrain: shades the ground and dots the hidden part of the track
+}) {
   const xy = (p: { az: number; el: number }) => {
     const r = ((90 - Math.max(0, p.el)) / 90) * 94,
       a = (p.az * Math.PI) / 180;
@@ -10,6 +19,29 @@ export function SkyPlot({ pass, live }: { pass: Pass; live?: { az: number; el: n
     b = xy(pass.los),
     peak = xy(pass.peak),
     path = pass.track.map((p, i) => `${i ? 'L' : 'M'}${xy(p).join(',')}`).join(' '),
+    // With terrain: the rim of the plot filled in up to the ground's angle in each direction ...
+    ground = horizon
+      ? `M120 26A94 94 0 1 1 119.99 26Z` +
+        Array.from({ length: 181 }, (_, i) => {
+          const az = i * 2;
+          return `${i ? 'L' : 'M'}${xy({ az, el: Math.max(0, horizonAngle(horizon, az)) })
+            .map((v) => v.toFixed(1))
+            .join(',')}`;
+        }).join('') +
+        'Z'
+      : '',
+    // ... and the track cut into runs that are above it (solid) and behind it (dotted).
+    runs = horizon
+      ? pass.track.reduce<{ hidden: boolean; d: string }[]>((list, p, i) => {
+          const hidden = p.el <= horizonAngle(horizon, p.az),
+            at = xy(p).join(',');
+          if (!i || list[list.length - 1].hidden !== hidden) {
+            const from = i ? xy(pass.track[i - 1]).join(',') : at;
+            list.push({ hidden, d: `M${from}${i ? `L${at}` : ''}` });
+          } else list[list.length - 1].d += `L${at}`;
+          return list;
+        }, [])
+      : null,
     current = live && live.el >= 0 ? xy(live) : null;
   return (
     <svg
@@ -41,7 +73,22 @@ export function SkyPlot({ pass, live }: { pass: Pass; live?: { az: number; el: n
       <text x="124" y="93" className="sky-degree">
         60°
       </text>
-      <path d={path} fill="none" stroke="#21806a" strokeWidth="2.5" />
+      {ground && <path className="sky-ground" d={ground} fillRule="evenodd" />}
+      {runs ? (
+        runs.map((r, i) => (
+          <path
+            key={i}
+            d={r.d}
+            fill="none"
+            stroke="#21806a"
+            strokeWidth={r.hidden ? 1.6 : 2.5}
+            strokeDasharray={r.hidden ? '1 5' : undefined}
+            strokeLinecap="round"
+          />
+        ))
+      ) : (
+        <path d={path} fill="none" stroke="#21806a" strokeWidth="2.5" />
+      )}
       <circle cx={a[0]} cy={a[1]} r="4" fill="#21806a" />
       <circle cx={b[0]} cy={b[1]} r="4" fill="#f8faf5" stroke="#21806a" strokeWidth="1.8" />
       <circle cx={peak[0]} cy={peak[1]} r="3" fill="#21806a" />

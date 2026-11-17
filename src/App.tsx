@@ -24,6 +24,7 @@ import {
   type Station,
 } from './lib/orbit';
 import { dateYear, makeClock } from './lib/time';
+import { exactSpot, inIceland, loadHorizon, type Horizon } from './lib/terrain';
 import { countUse } from './lib/usage';
 import { reachableCatalog, localizePasses, hiddenEvents } from './lib/visibility';
 
@@ -32,6 +33,11 @@ export default function Home() {
   const { elements, activity, data, fetching, load } = useOrbitData();
   const [stationConfirmed, setStationConfirmed] = useState(false);
   const [remembered, setRemembered] = useState(false); // a station was saved in this browser before
+  // Optional terrain check (Iceland): off until the visitor asks, and nothing is loaded before then.
+  const [terrainOn, setTerrainOn] = useState(false);
+  const [horizon, setHorizon] = useState<Horizon | null>(null);
+  const [terrainError, setTerrainError] = useState('');
+  const [dialogTab, setDialogTab] = useState<'map' | undefined>();
   const [station, setStation] = useState<Station>(defaultStation),
     [editing, setEditing] = useState(false),
     [orbitSatId, setOrbitSatId] = useState<string | null>(null);
@@ -190,11 +196,31 @@ export default function Home() {
       localStorage.setItem('northbound-station', JSON.stringify(s));
     } catch {}
     setEditing(false);
+    setDialogTab(undefined);
   }
   const events = useMemo(
     () => hiddenEvents(availableCatalog, result.passes, filters.status, now, filters.elevation),
     [availableCatalog, result.passes, filters.status, now, filters.elevation],
   );
+  useEffect(() => {
+    setHorizon(null);
+    setTerrainError('');
+    if (!terrainOn || !inIceland(station) || !exactSpot(station)) return;
+    let stale = false;
+    loadHorizon(station).then(
+      (h) => !stale && setHorizon(h),
+      (e: unknown) =>
+        !stale &&
+        setTerrainError(
+          e instanceof Error && e.message.startsWith('No terrain')
+            ? 'No terrain data for this spot. It covers land in Iceland only.'
+            : 'Could not load the terrain data. Check your connection and try again.',
+        ),
+    );
+    return () => {
+      stale = true;
+    };
+  }, [terrainOn, station]);
   const orbitSat = availableCatalog.find((s) => s.id === orbitSatId);
   return (
     <div className="app-shell">
@@ -274,6 +300,12 @@ export default function Home() {
                     now={now}
                     activity={activity}
                     clock={clock}
+                    terrain={{ on: terrainOn && inIceland(station), horizon, error: terrainError }}
+                    onTerrain={() => setTerrainOn((on) => !on)}
+                    onPickSpot={() => {
+                      setDialogTab('map');
+                      setEditing(true);
+                    }}
                     onClose={() => setMobileDetail(false)}
                     onOrbit={() => setOrbitSatId(picked.sat.id)}
                   />
@@ -315,9 +347,13 @@ export default function Home() {
           dialogRef={modalRef}
           opening={!stationConfirmed}
           blank={!stationConfirmed && !remembered}
+          startOn={dialogTab}
           onSave={saveStation}
           onClose={() => {
-            if (stationConfirmed) setEditing(false);
+            if (stationConfirmed) {
+              setEditing(false);
+              setDialogTab(undefined);
+            }
           }}
         />
       )}
