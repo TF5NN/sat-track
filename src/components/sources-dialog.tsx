@@ -136,8 +136,9 @@ export default function SourcesDialog({ data, now, result, modalRef, setSourceOp
           fetches map tiles from OpenStreetMap for the area you look at. “Check terrain”, offered in Iceland,
           fetches terrain files for the ground around your spot from my own site (made from ArcticDEM, Polar
           Geospatial Center) and shades the ground on the sky plot. It works from 2 m above the ground at your
-          spot and sets your station height to match. It is approximate: good to a few seconds of pass time,
-          leaning towards showing more blocking, and it knows nothing of buildings or trees.
+          spot and sets your station height to match. It is approximate: good to a few seconds of pass time on
+          gentle ground, rougher on steep slopes, and it knows nothing of buildings, trees or ground closer
+          than 100 m.
         </p>
         <p>
           Visits are counted anonymously with GoatCounter, to see whether the planner is used: page opens by

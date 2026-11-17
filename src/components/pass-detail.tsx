@@ -197,8 +197,9 @@ export default function PassDetail({
               <small>
                 Seen from {ANTENNA_METRES} m above the ground at your spot. The ground there is{' '}
                 {Math.round(horizon.groundMetres)} m above sea level, so your station height has been set to{' '}
-                {Math.round(horizon.groundMetres) + ANTENNA_METRES} m. Approximate: good to a few seconds,
-                leans towards showing more blocking, and knows nothing of buildings or trees.
+                {Math.round(horizon.groundMetres) + ANTENNA_METRES} m. Approximate: good to a few seconds on
+                gentle ground, rougher on steep slopes. It knows nothing of buildings, trees or ground closer
+                than 100 m.
               </small>
             </>
           )}
