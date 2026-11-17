@@ -9,6 +9,7 @@ import {
   Satellite as SatelliteIcon,
   Sun,
   X,
+  Mountain,
 } from 'lucide-react';
 import { twoline2satrec } from 'satellite.js';
 import Badge from './badge';
@@ -18,6 +19,7 @@ import { createPassCalendar } from '../lib/calendar';
 import { band, frequency, sources } from '../lib/catalog';
 import { compass, doppler, pointAt, tuningSteps, type Pass, type Station, grid } from '../lib/orbit';
 import { offsetLabel, utcDate, utcTime, type Clock } from '../lib/time';
+import { exactSpot, inIceland, terrainView, type Horizon } from '../lib/terrain';
 import { countUse } from '../lib/usage';
 
 function ics(pass: Pass, station: Station) {
@@ -50,6 +52,10 @@ function ics(pass: Pass, station: Station) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+// The optional terrain check: off until asked for, then loading, then a horizon or a message.
+export type TerrainState = { on: boolean; horizon: Horizon | null; error: string };
+const span = (seconds: number) =>
+  `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')} s`;
 export default function PassDetail({
   pass,
   station,
@@ -58,6 +64,9 @@ export default function PassDetail({
   onClose,
   onOrbit,
   clock,
+  terrain,
+  onTerrain,
+  onPickSpot,
 }: {
   pass: Pass;
   station: Station;
@@ -66,6 +75,9 @@ export default function PassDetail({
   onClose: () => void;
   onOrbit: () => void;
   clock: Clock;
+  terrain: TerrainState;
+  onTerrain: () => void; // switch the terrain check on or off
+  onPickSpot: () => void; // open the station dialog on its map
 }) {
   const { time, zone } = clock;
   const zoneName = () => clock.name;
@@ -82,6 +94,17 @@ export default function PassDetail({
     () => tuningSteps(rec, station, pass.sat.up, pass.sat.down, pass.aos.time, pass.los.time),
     [rec, station, pass.sat.up, pass.sat.down, pass.aos.time, pass.los.time],
   );
+  const horizon = terrain.on ? terrain.horizon : null;
+  // With terrain on: the pass second by second against the ground's angle in each direction.
+  const view = useMemo(() => {
+    if (!horizon) return null;
+    const samples = [];
+    for (let time = pass.aos.time; time <= pass.los.time; time += 1000) {
+      const p = pointAt(rec, time, station);
+      if (p) samples.push({ time, az: p.az, el: p.el });
+    }
+    return terrainView(samples, horizon);
+  }, [horizon, rec, station, pass.aos.time, pass.los.time]);
   const at = inPass ? now : sample,
     current = steps.reduce((c, s) => (s.time <= at ? s : c), steps[0]);
   return (
@@ -114,11 +137,16 @@ export default function PassDetail({
             </div>
           </>
         )}
-        <SkyPlot pass={pass} live={live} />
+        <SkyPlot pass={pass} live={live} horizon={horizon} />
         <span className="plot-caption">
           {compass(pass.aos.az)} <ArrowRight size={12} /> {compass(pass.los.az)} <span>·</span>{' '}
           {pass.peak.el.toFixed(0)}° peak
         </span>
+        {inIceland(station) && (
+          <button className="terrain-toggle" onClick={onTerrain} aria-pressed={terrain.on}>
+            <Mountain size={12} /> {terrain.on ? 'Hide terrain' : 'Check terrain'}
+          </button>
+        )}
       </div>
       <div className="timing">
         {points.map((p, i) => (
@@ -132,6 +160,48 @@ export default function PassDetail({
           </div>
         ))}
       </div>
+      {terrain.on && (
+        <div className="terrain-strip" role="status">
+          {!exactSpot(station) ? (
+            <p>
+              Terrain needs your exact spot, not a grid square.{' '}
+              <button onClick={onPickSpot}>Pick it on the map</button>
+            </p>
+          ) : terrain.error ? (
+            <p>{terrain.error}</p>
+          ) : !view || !horizon ? (
+            <p>Reading the terrain around you…</p>
+          ) : (
+            <>
+              <p>
+                <strong>
+                  {view.verdict === 'clear'
+                    ? 'Clear of terrain'
+                    : view.verdict === 'blocked'
+                      ? 'Blocked by terrain'
+                      : `Partly blocked: ${span(view.visibleSeconds)} of ${span(view.totalSeconds)} visible`}
+                </strong>
+              </p>
+              {view.verdict === 'partly' && view.clears !== null && view.behind !== null && (
+                <dl>
+                  <div>
+                    <dt>Clears terrain</dt>
+                    <dd>{time(view.clears, true)}</dd>
+                  </div>
+                  <div>
+                    <dt>Behind terrain</dt>
+                    <dd>{time(view.behind, true)}</dd>
+                  </div>
+                </dl>
+              )}
+              <small>
+                Ground at your spot {Math.round(horizon.groundMetres)} m. Approximate: good to a few seconds,
+                leans towards showing more blocking, and knows nothing of buildings or trees.
+              </small>
+            </>
+          )}
+        </div>
+      )}
       {!zone && (
         <p className="fine utc-beside">
           Local time ({offsetLabel(pass.aos.time)}). In UTC: {utcTime(pass.aos.time, true)}–

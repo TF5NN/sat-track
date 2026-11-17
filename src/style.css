@@ -2651,3 +2651,79 @@ footer > button {
   font: 500 10px var(--mono);
   color: var(--green);
 }
+/* Optional terrain check: its button under the sky plot, the shaded ground, and the result strip. */
+.terrain-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  padding: 4px 9px;
+  border: 1px solid #d5dfd3;
+  border-radius: 999px;
+  font-size: 10px;
+  color: #55774a;
+}
+.terrain-toggle[aria-pressed='true'] {
+  background: var(--green-soft);
+  border-color: #b9d2bd;
+  color: var(--ink);
+}
+.sky-ground {
+  fill: #b9c4b3;
+  opacity: 0.6;
+}
+.terrain-strip {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  color: #55774a;
+  line-height: 1.6;
+}
+.terrain-strip p {
+  margin: 0;
+}
+.terrain-strip strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.terrain-strip button {
+  text-decoration: underline;
+  padding: 0;
+  font-size: inherit;
+  color: var(--green);
+}
+.terrain-strip dl {
+  display: flex;
+  gap: 26px;
+  margin: 8px 0 6px;
+}
+.terrain-strip dt {
+  font-size: 8px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.terrain-strip dd {
+  margin: 2px 0 0;
+  font: 500 13px var(--mono);
+  color: var(--ink);
+}
+.terrain-strip small {
+  display: block;
+  font-size: 9px;
+  color: #8e9d81;
+}
+/* Map tab of the station dialog. */
+.map-picker {
+  height: 280px;
+  margin: 0 0 10px;
+  border: 1px solid #dbe5d2;
+  border-radius: 6px;
+  cursor: crosshair;
+}
+.map-pin {
+  border-radius: 50%;
+  background: var(--ink);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px #0006;
+}

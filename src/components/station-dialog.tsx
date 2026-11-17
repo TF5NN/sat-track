@@ -1,8 +1,11 @@
-import { useState, type RefObject } from 'react';
+import { lazy, Suspense, useState, type RefObject } from 'react';
 import { Check, LocateFixed, MapPin, X } from 'lucide-react';
 import { parseLocator, locatorFor } from '../lib/locator';
 import { defaultStation, grid, type Station } from '../lib/orbit';
 import { countUse } from '../lib/usage';
+
+const MapPicker = lazy(() => import('./map-picker')); // the map library loads only if the Map tab is opened
+type Method = 'grid' | 'coordinates' | 'map';
 
 type Props = {
   station: Station;
@@ -11,6 +14,7 @@ type Props = {
   onClose: () => void;
   opening?: boolean;
   blank?: boolean; // first visit: nothing remembered, so start with an empty grid field
+  startOn?: Method; // open on this tab
 };
 export default function StationDialog({
   station,
@@ -19,11 +23,16 @@ export default function StationDialog({
   onClose,
   opening = false,
   blank = false,
+  startOn,
 }: Props) {
   // The grid tab is the default. A remembered station entered as coordinates reopens on that tab,
   // so its exact position is not replaced by a grid-square centre without the visitor choosing to.
-  const [method, setMethod] = useState<'grid' | 'coordinates'>(
-    blank || station.locator ? 'grid' : 'coordinates',
+  const [method, setMethod] = useState<Method>(
+    startOn ?? (blank || station.locator ? 'grid' : 'coordinates'),
+  );
+  // The exact spot chosen on the map, if any.
+  const [pin, setPin] = useState<{ lat: number; lon: number } | null>(
+    blank ? null : { lat: station.lat, lon: station.lon },
   );
   const [locator, setLocator] = useState(blank ? '' : (station.locator ?? grid(station).toUpperCase()));
   const [lat, setLat] = useState(blank ? '' : String(station.lat));
@@ -49,8 +58,14 @@ export default function StationDialog({
       (position) => {
         const square = locatorFor(position.coords.latitude, position.coords.longitude).toUpperCase();
         setLocator(square);
-        setMethod('grid');
-        setFound(`Your device reports ${square}. Check it, then confirm below.`);
+        if (method === 'map') {
+          // On the map the exact position is kept, since that is what the map is for.
+          setPin({ lat: position.coords.latitude, lon: position.coords.longitude });
+          setFound(`Your device reports this spot, in ${square}. Check it, then confirm below.`);
+        } else {
+          setMethod('grid');
+          setFound(`Your device reports ${square}. Check it, then confirm below.`);
+        }
         setLocating(false);
       },
       (failure) => {
@@ -64,7 +79,31 @@ export default function StationDialog({
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 },
     );
   }
-  function switchMethod(next: 'grid' | 'coordinates') {
+  const typed = () => {
+    const latitude = Number(lat),
+      longitude = Number(lon);
+    return lat.trim() &&
+      lon.trim() &&
+      Number.isFinite(latitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      Number.isFinite(longitude) &&
+      longitude >= -180 &&
+      longitude <= 180
+      ? { lat: latitude, lon: longitude }
+      : null;
+  };
+  function switchMethod(next: Method) {
+    // Carry the position from tab to tab, so nothing typed or picked is silently dropped.
+    if (next === 'map')
+      setPin(method === 'grid' ? (cell ? { lat: cell.lat, lon: cell.lon } : pin) : (typed() ?? pin));
+    if (method === 'map' && pin) {
+      if (next === 'coordinates') {
+        setLat(pin.lat.toFixed(5));
+        setLon(pin.lon.toFixed(5));
+      }
+      if (next === 'grid') setLocator(locatorFor(pin.lat, pin.lon).toUpperCase());
+    }
     if (next === 'coordinates' && method === 'grid' && cell) {
       setLat(cell.lat.toFixed(6));
       setLon(cell.lon.toFixed(6));
@@ -98,7 +137,13 @@ export default function StationDialog({
       setError('Enter a height between −500 and 9000 metres.');
       return;
     }
-    if (method === 'grid') {
+    if (method === 'map') {
+      if (!pin) {
+        setError('Tap the map to choose your spot.');
+        return;
+      }
+      onSave({ lat: Number(pin.lat.toFixed(5)), lon: Number(pin.lon.toFixed(5)), height: h });
+    } else if (method === 'grid') {
       if (!cell) {
         setError('Enter a valid 4-, 6- or 8-character grid, such as HP94, HP94ad or HP94ad25.');
         return;
@@ -160,9 +205,30 @@ export default function StationDialog({
           >
             Coordinates
           </button>
+          <button role="tab" aria-selected={method === 'map'} onClick={() => switchMethod('map')}>
+            Map
+          </button>
         </div>
         <form onSubmit={save} noValidate>
-          {method === 'grid' ? (
+          {method === 'map' ? (
+            <>
+              <Suspense fallback={<p className="grid-help">Loading the map…</p>}>
+                <MapPicker
+                  pin={pin}
+                  onPick={(spot) => {
+                    setPin(spot);
+                    setError('');
+                    setFound('');
+                  }}
+                />
+              </Suspense>
+              <p className="grid-help">
+                {pin
+                  ? `Exact spot: ${Math.abs(pin.lat).toFixed(5)}° ${pin.lat < 0 ? 'S' : 'N'} · ${Math.abs(pin.lon).toFixed(5)}° ${pin.lon < 0 ? 'W' : 'E'} · grid ${locatorFor(pin.lat, pin.lon).toUpperCase()}. Drag the pin to adjust.`
+                  : 'Tap the map to place a pin on your exact spot. Map tiles come from OpenStreetMap.'}
+              </p>
+            </>
+          ) : method === 'grid' ? (
             <>
               <label className="field">
                 MAIDENHEAD LOCATOR

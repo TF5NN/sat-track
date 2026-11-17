@@ -248,8 +248,59 @@ async function open(name, options = {}, time = clockAt, prepare) {
   await snap('01 banner in work view');
   await page.getByRole('button', { name: 'Satellite guide' }).click();
   await snap('02 banner on guide');
-  await page.locator('.event-banner').getByRole('button', { name: 'Show passes' }).click();
-  await snap('03 show passes from banner');
+  // The banner only exists while the catalogue has a dated event running.
+  if (await page.locator('.event-banner').count()) {
+    await page.locator('.event-banner').getByRole('button', { name: 'Show passes' }).click();
+    await snap('03 show passes from banner');
+  }
+  await close();
+}
+// ---- Optional extras: the Map tab and, in Iceland, the terrain check.
+// Map tiles are replaced by a blank image and the terrain comes from a made-up module,
+// so the result does not depend on outside services.
+{
+  const blank = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  const fakeTerrain = `export async function openTerrain() { return {
+    covers: async () => true,
+    horizon: async () => ({ stepDegrees: 90, groundMetres: 71, angles: [12, 3, 0, 6] }) }; }`;
+  const { page, snap, tick, close } = await open('extras', {}, clockAt, async (p) => {
+    await p.route('**/tile.openstreetmap.org/**', (r) =>
+      r.fulfill({ contentType: 'image/png', body: blank }),
+    );
+    await p.route('**/tf5nn.github.io/terrain/**', (r) =>
+      r.fulfill({
+        contentType: 'text/javascript',
+        headers: { 'access-control-allow-origin': '*' },
+        body: fakeTerrain,
+      }),
+    );
+  });
+  await page.getByRole('tab', { name: 'Map' }).click();
+  await tick(1000); // the map appears after a short timer, and this clock is frozen
+  await page.locator('.map-picker.leaflet-container').waitFor();
+  await page.getByRole('button', { name: /Use this location/ }).click();
+  await snap('01 map tab needs a pin');
+  const box = await page.locator('.map-picker').boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await tick(500);
+  result['extras: 02 pin placed'] = await page.locator('.map-picker + .grid-help').innerText();
+  await page.getByRole('button', { name: 'Use Reykjavík default' }).click();
+  await tick(1000);
+  await page.locator('.terrain-toggle').click();
+  await page.locator('.terrain-strip strong').waitFor();
+  await snap('03 terrain shown for the open pass');
+  await page.locator('.terrain-toggle').click();
+  await snap('04 terrain hidden again');
+  await page.locator('.station-summary').click();
+  await page.getByRole('tab', { name: 'Maidenhead grid' }).click();
+  await page.getByLabel('Maidenhead locator').fill('HP94ad');
+  await page.getByRole('button', { name: /Save station/ }).click();
+  await tick(1000);
+  await page.locator('.terrain-toggle').click();
+  await snap('05 a grid square is not exact enough');
   await close();
 }
 // ---- "Use my location": the device reports London; then a device that refuses
