@@ -1,7 +1,12 @@
-import { Radio } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Moon, Radio, Sun } from 'lucide-react';
+import { chooseTheme, currentTheme, followDevice } from '../lib/theme';
 import { countUse } from '../lib/usage';
 
 export default function PageHeader() {
+  const [theme, setTheme] = useState(currentTheme);
+  useEffect(() => followDevice(setTheme), []);
+  const other = theme === 'dark' ? 'light' : 'dark';
   return (
     <header className="header">
       <a href={import.meta.env.BASE_URL} className="brand" aria-label="Northbound home">
@@ -41,6 +46,17 @@ export default function PageHeader() {
         >
           GitHub ↗
         </a>
+        <button
+          className="theme-toggle"
+          aria-label={`Switch to the ${other} theme`}
+          title={`Switch to the ${other} theme`}
+          onClick={() => {
+            chooseTheme(other);
+            setTheme(other);
+          }}
+        >
+          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
       </div>
     </header>
   );

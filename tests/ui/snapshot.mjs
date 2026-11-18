@@ -311,6 +311,30 @@ async function open(name, options = {}, time = clockAt, prepare) {
   await snap('05 a grid square is not exact enough');
   await close();
 }
+// ---- Light and dark: follows the device, and the header button switches and remembers
+{
+  const { page, snap, tick, close } = await open('theme');
+  await page.getByRole('button', { name: 'Use Reykjavík default' }).click();
+  await tick(1000);
+  result['theme: 01 follows the device (light here)'] = await page.evaluate(
+    () => document.documentElement.dataset.theme,
+  );
+  await page.getByRole('button', { name: 'Switch to the dark theme' }).click();
+  result['theme: 02 dark after the button'] = await page.evaluate(
+    () => `${document.documentElement.dataset.theme} / remembered ${localStorage.getItem('tf5nn-theme')}`,
+  );
+  await snap('03 dark');
+  await page.reload();
+  await tick(1000);
+  result['theme: 04 still dark after reloading'] = await page.evaluate(
+    () => document.documentElement.dataset.theme,
+  );
+  await page.getByRole('button', { name: /Use this location/ }).click(); // each opening asks to confirm the station
+  await tick(1000);
+  await page.getByRole('button', { name: 'Switch to the light theme' }).click();
+  result['theme: 05 light again'] = await page.evaluate(() => document.documentElement.dataset.theme);
+  await close();
+}
 // ---- Satellites for other radios: off by default, then switched on
 {
   const { page, snap, tick, close } = await open('other radios');
