@@ -124,17 +124,19 @@ The shades above are copied, as one block, to the top of each app's stylesheet.
 An app may add colours of its own below that block when they mean something
 only that app has. They are kept few, and they are listed here.
 
-| App       | Name                          | Value                           | For                                                                          |
-| --------- | ----------------------------- | ------------------------------- | ---------------------------------------------------------------------------- |
-| Sightline | `path`                        | `#2f6fb7`                       | The line of sight, on the map and the chart; point B in the look-around view |
-| Sightline | `good`                        | `#2e8b57`                       | A station that should work                                                   |
-| Sightline | `marginal`, `marginal-ink`    | `#d98a00`, `#b87400`            | Grazing ground; a marginal station; its text                                 |
-| Sightline | `bad`, `bad-line`, `bad-soft` | `#c0392b`, `#eec2bb`, `#f8dcd8` | Blocked ground; an unlikely station; an error and its box                    |
-| Feedpoint | `blue`, `gold`, `violet`      | `#2f6fb7`, `#b08d1e`, `#8a56c2` | Marks on the graph's controls                                                |
+| App       | Name                          | Light                           | Dark                            | For                                                                          |
+| --------- | ----------------------------- | ------------------------------- | ------------------------------- | ---------------------------------------------------------------------------- |
+| Sightline | `path`                        | `#2f6fb7`                       | `#6aa6e8`                       | The line of sight, on the map and the chart; point B in the look-around view |
+| Sightline | `good`                        | `#2e8b57`                       | `#4fb07a`                       | A station that should work                                                   |
+| Sightline | `marginal`, `marginal-ink`    | `#d98a00`, `#b87400`            | `#e5a23a`, `#e9b45e`            | Grazing ground; a marginal station; its text                                 |
+| Sightline | `bad`, `bad-line`, `bad-soft` | `#c0392b`, `#eec2bb`, `#f8dcd8` | `#e2695b`, `#6b3a35`, `#3a2320` | Blocked ground; an unlikely station; an error and its box                    |
+| Feedpoint | `blue`, `gold`, `violet`      | `#2f6fb7`, `#b08d1e`, `#8a56c2` | `#6aa6e8`, `#d6b548`, `#b592e6` | Marks on the graph's controls                                                |
+| Feedpoint | `teal`, `warn`                | `#1b8f88`, `#b5532a`            | `#4fc2ba`, `#e38d69`            | Notes in the read-out: a tuner match found, no match                         |
 
-Feedpoint's curves take their colours from the band list in its script, and
-Sightline's chart and map lines are set in its script too. Those are data
-colours and are not named here.
+Sightline's chart reads these shades from the page each time it is drawn.
+Feedpoint's curves take their colours from the band list in its script; those
+are data colours and are not named here. In the dark its `themed()` function
+keeps each one's hue and lifts it until it stands out on a dark ground.
 
 ## Shared pieces
 
