@@ -128,6 +128,30 @@
 :root[data-theme='dark'] .leaflet-tile-pane {
   filter: brightness(0.72) contrast(1.05) saturate(0.85);
 }
+/* The map's own zoom buttons and credit line are white by Leaflet's design; in the dark they take
+   the page's shades. */
+:root[data-theme='dark'] .leaflet-bar a {
+  background: var(--white);
+  color: var(--ink);
+  border-bottom-color: var(--line-strong);
+}
+:root[data-theme='dark'] .leaflet-bar {
+  border-color: var(--line-strong);
+}
+:root[data-theme='dark'] .leaflet-bar a:hover {
+  background: var(--tint-grey);
+}
+:root[data-theme='dark'] .leaflet-bar a.leaflet-disabled {
+  background: var(--surface);
+  color: var(--text-faint);
+}
+:root[data-theme='dark'] .leaflet-control-attribution {
+  background: #0f1917cc;
+  color: var(--text-muted);
+}
+:root[data-theme='dark'] .leaflet-control-attribution a {
+  color: var(--green);
+}
 
 * {
   box-sizing: border-box;
