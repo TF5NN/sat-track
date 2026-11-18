@@ -13,7 +13,12 @@ export type Horizon = { angles: ArrayLike<number>; stepDegrees: number; groundMe
 type TerrainModule = {
   openTerrain: (base: string) => Promise<{
     covers: (lat: number, lon: number) => Promise<boolean>;
-    horizon: (at: { lat: number; lon: number; antennaMetres: number }) => Promise<Horizon>;
+    horizon: (at: {
+      lat: number;
+      lon: number;
+      antennaMetres: number;
+      closeDetail?: boolean;
+    }) => Promise<Horizon>;
   }>;
 };
 let opened: ReturnType<TerrainModule['openTerrain']> | null = null;
@@ -36,7 +41,14 @@ export function loadHorizon(station: Station): Promise<Horizon> {
       const terrain = await opened;
       if (!(await terrain.covers(station.lat, station.lon)))
         throw new Error('No terrain data for this spot.');
-      return terrain.horizon({ lat: station.lat, lon: station.lon, antennaMetres: ANTENNA_METRES });
+      // closeDetail: the ground under the station and the closest 500 m from the 10 m data, which is
+      // sharper on hilltops and slopes than the 40 m layer used further out.
+      return terrain.horizon({
+        lat: station.lat,
+        lon: station.lon,
+        antennaMetres: ANTENNA_METRES,
+        closeDetail: true,
+      });
     })();
     pending.catch(() => {
       cache.delete(key);
