@@ -50,11 +50,11 @@ export function SkyPlot({
       role="img"
       aria-label={`Sky path from ${compass(pass.aos.az)} through ${pass.peak.el.toFixed(0)} degrees elevation to ${compass(pass.los.az)}. North at top, east at right.`}
     >
-      <circle cx="120" cy="120" r="94" fill="#f4f7f2" stroke="#cfdad4" />
+      <circle cx="120" cy="120" r="94" fill="var(--sky)" stroke="var(--line-strong)" />
       {[31.33, 62.67].map((r) => (
-        <circle key={r} cx="120" cy="120" r={r} fill="none" stroke="#d6dfd8" strokeDasharray="3 4" />
+        <circle key={r} cx="120" cy="120" r={r} fill="none" stroke="var(--grid)" strokeDasharray="3 4" />
       ))}
-      <path d="M26 120H214M120 26V214" stroke="#d6dfd8" />
+      <path d="M26 120H214M120 26V214" stroke="var(--grid)" />
       <text x="120" y="14" textAnchor="middle" className="sky-cardinal">
         N
       </text>
@@ -80,22 +80,22 @@ export function SkyPlot({
             key={i}
             d={r.d}
             fill="none"
-            stroke="#21806a"
+            stroke="var(--green-bright)"
             strokeWidth={r.hidden ? 1.6 : 2.5}
             strokeDasharray={r.hidden ? '1 5' : undefined}
             strokeLinecap="round"
           />
         ))
       ) : (
-        <path d={path} fill="none" stroke="#21806a" strokeWidth="2.5" />
+        <path d={path} fill="none" stroke="var(--green-bright)" strokeWidth="2.5" />
       )}
-      <circle cx={a[0]} cy={a[1]} r="4" fill="#21806a" />
-      <circle cx={b[0]} cy={b[1]} r="4" fill="#f8faf5" stroke="#21806a" strokeWidth="1.8" />
-      <circle cx={peak[0]} cy={peak[1]} r="3" fill="#21806a" />
+      <circle cx={a[0]} cy={a[1]} r="4" fill="var(--green-bright)" />
+      <circle cx={b[0]} cy={b[1]} r="4" fill="var(--sky)" stroke="var(--green-bright)" strokeWidth="1.8" />
+      <circle cx={peak[0]} cy={peak[1]} r="3" fill="var(--green-bright)" />
       {current && (
         <>
-          <circle cx={current[0]} cy={current[1]} r="8" fill="#21806a" opacity=".2" />
-          <circle cx={current[0]} cy={current[1]} r="4" fill="#142f32" />
+          <circle cx={current[0]} cy={current[1]} r="8" fill="var(--green-bright)" opacity=".2" />
+          <circle cx={current[0]} cy={current[1]} r="4" fill="var(--ink-deep)" />
         </>
       )}
     </svg>
@@ -105,7 +105,7 @@ export function Arc({ pass }: { pass: Pass }) {
   const d = pass.track.map((p, i) => `${i ? 'L' : 'M'}${(i / 60) * 74},${36 - (p.el / 90) * 32}`).join(' ');
   return (
     <svg viewBox="0 0 74 42" className="mini-arc" aria-hidden="true">
-      <path d="M0 36H74" stroke="#d7dfd8" />
+      <path d="M0 36H74" stroke="var(--grid)" />
       <path d={d} fill="none" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   );

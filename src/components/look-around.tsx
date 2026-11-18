@@ -194,7 +194,7 @@ export default function LookAround({
               key={i}
               d={r.d}
               fill="none"
-              stroke="#21806a"
+              stroke="var(--green-bright)"
               strokeWidth={r.hidden ? 1.6 : 2.5}
               strokeDasharray={r.hidden ? '1 5' : undefined}
               strokeLinecap="round"
@@ -209,8 +209,8 @@ export default function LookAround({
                     cx={m.p[0]}
                     cy={m.p[1]}
                     r="4"
-                    fill={m.hollow ? '#f8faf5' : '#21806a'}
-                    stroke="#21806a"
+                    fill={m.hollow ? 'var(--sky)' : 'var(--green-bright)'}
+                    stroke="var(--green-bright)"
                     strokeWidth="1.8"
                   />
                   <text
@@ -224,11 +224,11 @@ export default function LookAround({
                 </g>
               ),
           )}
-          {peak && <circle cx={peak[0]} cy={peak[1]} r="3" fill="#21806a" />}
+          {peak && <circle cx={peak[0]} cy={peak[1]} r="3" fill="var(--green-bright)" />}
           {dot && (
             <>
-              <circle cx={dot[0]} cy={dot[1]} r="9" fill="#21806a" opacity=".2" />
-              <circle cx={dot[0]} cy={dot[1]} r="4.5" fill="#142f32" />
+              <circle cx={dot[0]} cy={dot[1]} r="9" fill="var(--green-bright)" opacity=".2" />
+              <circle cx={dot[0]} cy={dot[1]} r="4.5" fill="var(--ink-deep)" />
             </>
           )}
         </svg>
