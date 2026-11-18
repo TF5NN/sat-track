@@ -118,6 +118,24 @@ the stylesheet or the components uses a colour that is not on this list.
 | `shadow`, `shadow-soft` | `#28422c13`, `#2342230b` | Under cards and panels           |
 | `shadow-black`          | `#0006`                  | Under map pins                   |
 
+## Each app's own colours
+
+The shades above are copied, as one block, to the top of each app's stylesheet.
+An app may add colours of its own below that block when they mean something
+only that app has. They are kept few, and they are listed here.
+
+| App       | Name                          | Value                           | For                                                                          |
+| --------- | ----------------------------- | ------------------------------- | ---------------------------------------------------------------------------- |
+| Sightline | `path`                        | `#2f6fb7`                       | The line of sight, on the map and the chart; point B in the look-around view |
+| Sightline | `good`                        | `#2e8b57`                       | A station that should work                                                   |
+| Sightline | `marginal`, `marginal-ink`    | `#d98a00`, `#b87400`            | Grazing ground; a marginal station; its text                                 |
+| Sightline | `bad`, `bad-line`, `bad-soft` | `#c0392b`, `#eec2bb`, `#f8dcd8` | Blocked ground; an unlikely station; an error and its box                    |
+| Feedpoint | `blue`, `gold`, `violet`      | `#2f6fb7`, `#b08d1e`, `#8a56c2` | Marks on the graph's controls                                                |
+
+Feedpoint's curves take their colours from the band list in its script, and
+Sightline's chart and map lines are set in its script too. Those are data
+colours and are not named here.
+
 ## Shared pieces
 
 | Piece       | How it is made                                                                                                                                                                                                                      |
