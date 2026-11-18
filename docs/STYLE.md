@@ -51,15 +51,15 @@ the stylesheet or the components uses a colour that is not on this list.
 
 ### Greens
 
-| Name           | Value     | For                                                                             |
-| -------------- | --------- | ------------------------------------------------------------------------------- |
-| `green-dark`   | `#244c3d` | The primary button; the chosen option in a segmented control                    |
-| `green`        | `#267c62` | The accent: focus rings, the slider, live readouts                              |
-| `green-bright` | `#21806a` | The pass track and its end points in the drawings                               |
-| `green-mid`    | `#417954` | The bar on the chosen pass, the tuned frequencies, links inside notes           |
-| `green-light`  | `#5f9d77` | The "live" dot, the small pass arc, the full stop in the title                  |
-| `green-vivid`  | `#60884e` | "Workable" badge text; links and emphasised words in the guide and instructions |
-| `green-pale`   | `#bce3bc` | The logo mark on its dark tile                                                  |
+| Name                     | Value                | For                                                                             |
+| ------------------------ | -------------------- | ------------------------------------------------------------------------------- |
+| `green-dark`             | `#244c3d`            | The primary button; the chosen option in a segmented control                    |
+| `green`                  | `#267c62`            | The accent: focus rings, the slider, live readouts                              |
+| `green-bright`           | `#21806a`            | The pass track and its end points in the drawings                               |
+| `green-mid`              | `#417954`            | The bar on the chosen pass, the tuned frequencies, links inside notes           |
+| `green-light`            | `#5f9d77`            | The "live" dot, the small pass arc, the full stop in the title                  |
+| `green-vivid`            | `#60884e`            | "Workable" badge text; links and emphasised words in the guide and instructions |
+| `logo-tile`, `logo-mark` | `#203b3d`, `#bce3bc` | The logo: a dark tile with a pale mark, in both themes                          |
 
 ### Amber, rust and blue
 
@@ -140,7 +140,7 @@ colours and are not named here.
 
 | Piece       | How it is made                                                                                                                                                                                                                      |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Header      | 90 px tall, a rule (`line`) underneath, 46 px of space at the sides. Left: the logo tile (`ink` with a `green-pale` mark), the app name and a one-line description. Right: bordered links "TF5NN ↗" and "GitHub ↗" in the mono face |
+| Header      | 90 px tall, a rule (`line`) underneath, 46 px of space at the sides. Left: the logo (`logo-tile` with a `logo-mark` mark), the app name and a one-line description. Right: bordered links "TF5NN ↗" and "GitHub ↗" in the mono face |
 | Button      | White, 1 px `line-green` border, 5 px corners, small sans text, icon to the left of the words. The primary one is `green-dark`                                                                                                      |
 | Header link | Mono 13 px, weight 500, 1 px `line-strong` border, 4 px corners                                                                                                                                                                     |
 | Field       | `surface`, `line-strong` border, 5 px corners; its label above it as an eyebrow in `muted`                                                                                                                                          |
@@ -158,13 +158,74 @@ The page is at most 1600 px wide. Below 1190 px the three columns start to
 fold; below 1000 px the pass panel moves under the list; below 720 px the
 layout is a single column and the pass panel opens over the page.
 
-## Dark mode (decided, not yet built)
+## Dark mode
 
-- It follows the device's setting by default.
-- There is also a small, visible button for it in the header of each app. A
-  choice made there is remembered in that browser and wins over the device.
-- It is made by giving every named shade above a second value. No component
-  gets its own dark colour.
+- The page follows the device's setting until the visitor presses the small sun
+  or moon button at the end of the header. From then on their choice is
+  remembered in that browser (under `tf5nn-theme`, one name for all the apps, so
+  it carries from one to the next) and wins over the device.
+- It is made by giving every named shade a second value, in one block under the
+  first in `src/style.css`. No component has a dark colour of its own. The one
+  other rule dims the map pictures, which are made for a light page.
+- Dark surfaces get lighter as they come forward: `paper` is the darkest, then
+  `surface`, then `white` for buttons. Text runs the other way.
+- The logo keeps its dark tile. The sun and moon keep their colours.
+
+| Name           | Light       | Dark        |
+| -------------- | ----------- | ----------- |
+| `ink-deep`     | `#142f32`   | `#f3f7f1`   |
+| `ink`          | `#203b3d`   | `#e4ece4`   |
+| `ink-soft`     | `#34503d`   | `#cdd9cd`   |
+| `text-strong`  | `#526d4d`   | `#b3c6ad`   |
+| `text`         | `#628359`   | `#9fb698`   |
+| `text-cool`    | `#67816d`   | `#9bb1a2`   |
+| `text-muted`   | `#809078`   | `#8c9f88`   |
+| `muted`        | `#76847d`   | `#8d9c93`   |
+| `text-soft`    | `#96a288`   | `#75866f`   |
+| `text-faint`   | `#b2bda9`   | `#54635b`   |
+| `green-dark`   | `#244c3d`   | `#8fd3b4`   |
+| `green`        | `#267c62`   | `#53b893`   |
+| `green-bright` | `#21806a`   | `#49b997`   |
+| `green-mid`    | `#417954`   | `#67ab82`   |
+| `green-light`  | `#5f9d77`   | `#72b98d`   |
+| `green-vivid`  | `#60884e`   | `#8cbb79`   |
+| `logo-tile`    | `#203b3d`   | `#1f4236`   |
+| `logo-mark`    | `#bce3bc`   | `#bce3bc`   |
+| `amber-ink`    | `#8a6a2f`   | `#e3ba70`   |
+| `amber-text`   | `#8a7448`   | `#cfb37e`   |
+| `amber-fill`   | `#b3945f`   | `#b3945f`   |
+| `amber-line`   | `#e0d7bd`   | `#4d442a`   |
+| `amber-soft`   | `#f7f1df`   | `#2b2718`   |
+| `amber-wash`   | `#f0ebe0`   | `#2d2920`   |
+| `rust`         | `#a35d3c`   | `#e38d69`   |
+| `blue-ink`     | `#647d98`   | `#a0b7d2`   |
+| `blue-fill`    | `#8397b1`   | `#8397b1`   |
+| `blue-soft`    | `#e9edf2`   | `#1f2b38`   |
+| `line-accent`  | `#adc5a4`   | `#44705a`   |
+| `line-green`   | `#d9e3d0`   | `#2d4138`   |
+| `line-strong`  | `#d5dfd3`   | `#30433c`   |
+| `line`         | `#dfe5de`   | `#263732`   |
+| `tint-strong`  | `#e2eee0`   | `#22392e`   |
+| `tint-grey`    | `#e7ede4`   | `#212f2a`   |
+| `green-soft`   | `#e8f2e9`   | `#1c3229`   |
+| `wash`         | `#edf0e7`   | `#14201d`   |
+| `tint`         | `#f0f3e9`   | `#19261f`   |
+| `paper`        | `#f7f8f3`   | `#0f1917`   |
+| `surface`      | `#fcfdf8`   | `#15221f`   |
+| `white`        | `#fff`      | `#1c2b27`   |
+| `ground`       | `#b9c4b3`   | `#3b4c42`   |
+| `grid`         | `#d6dfd8`   | `#2a3b35`   |
+| `sky`          | `#f4f7f2`   | `#17262a`   |
+| `sun`          | `#e9b84a`   | `#e9b84a`   |
+| `sun-edge`     | `#c9962a`   | `#c9962a`   |
+| `moon`         | `#e6e9ee`   | `#d9dde3`   |
+| `moon-edge`    | `#9aa5b1`   | `#8793a0`   |
+| `backdrop`     | `#16332970` | `#000000a6` |
+| `scrim`        | `#1d3e2a80` | `#00000099` |
+| `shadow-deep`  | `#0a251c30` | `#00000080` |
+| `shadow`       | `#28422c13` | `#00000040` |
+| `shadow-soft`  | `#2342230b` | `#00000030` |
+| `shadow-black` | `#0006`     | `#000a`     |
 
 ## Changing this guide
 

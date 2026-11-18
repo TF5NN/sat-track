@@ -1,18 +1,39 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#214e3a" />
-  <meta name="description" content="Worldwide amateur satellite passes for FM 2 m / 70 cm handheld radios. Location-aware planning, Doppler guidance and orbital data, designed for the VGC VR-N76." />
-  <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
-  <title>Northbound · TF5NN Satellite Planner</title>
-</head>
-<body>
-  <div id="root"></div>
-  <noscript>This satellite planner needs JavaScript to calculate passes on your device.</noscript>
-  <script type="module" src="/src/main.tsx"></script>
-  <!-- Anonymous visit counting (GoatCounter): no cookies, country-level only. See README, Data and privacy. -->
-  <script data-goatcounter="https://tf5nn.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#214e3a" />
+    <meta
+      name="description"
+      content="Worldwide amateur satellite passes for FM 2 m / 70 cm handheld radios. Location-aware planning, Doppler guidance and orbital data, designed for the VGC VR-N76."
+    />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <title>Northbound · TF5NN Satellite Planner</title>
+    <!-- Light or dark before the first paint: the visitor's remembered choice, otherwise the device's setting. -->
+    <script>
+      (function () {
+        var theme = null;
+        try {
+          theme = localStorage.getItem('tf5nn-theme');
+        } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark')
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        if (theme === 'dark')
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f1917');
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>This satellite planner needs JavaScript to calculate passes on your device.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- Anonymous visit counting (GoatCounter): no cookies, country-level only. See README, Data and privacy. -->
+    <script
+      data-goatcounter="https://tf5nn.goatcounter.com/count"
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
+  </body>
 </html>

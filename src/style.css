@@ -20,7 +20,8 @@
   --green-mid: #417954;
   --green-light: #5f9d77;
   --green-vivid: #60884e;
-  --green-pale: #bce3bc;
+  --logo-tile: #203b3d;
+  --logo-mark: #bce3bc;
   /* Amber and rust: notes and warnings */
   --amber-ink: #8a6a2f;
   --amber-text: #8a7448;
@@ -65,6 +66,69 @@
   --mono: 'IBM Plex Mono', monospace;
   --sans: 'DM Sans', Arial, sans-serif;
 }
+/* Dark mode: the same named shades with a second value. Nothing else in this file knows about it,
+   apart from dimming the map. The theme is set on <html> by index.html and src/lib/theme.ts. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ink-deep: #f3f7f1;
+  --ink: #e4ece4;
+  --ink-soft: #cdd9cd;
+  --text-strong: #b3c6ad;
+  --text: #9fb698;
+  --text-cool: #9bb1a2;
+  --text-muted: #8c9f88;
+  --muted: #8d9c93;
+  --text-soft: #75866f;
+  --text-faint: #54635b;
+  --green-dark: #8fd3b4;
+  --green: #53b893;
+  --green-bright: #49b997;
+  --green-mid: #67ab82;
+  --green-light: #72b98d;
+  --green-vivid: #8cbb79;
+  --logo-tile: #1f4236;
+  --logo-mark: #bce3bc;
+  --amber-ink: #e3ba70;
+  --amber-text: #cfb37e;
+  --amber-fill: #b3945f;
+  --amber-line: #4d442a;
+  --amber-soft: #2b2718;
+  --amber-wash: #2d2920;
+  --rust: #e38d69;
+  --blue-ink: #a0b7d2;
+  --blue-fill: #8397b1;
+  --blue-soft: #1f2b38;
+  --line-accent: #44705a;
+  --line-green: #2d4138;
+  --line-strong: #30433c;
+  --line: #263732;
+  --tint-strong: #22392e;
+  --tint-grey: #212f2a;
+  --green-soft: #1c3229;
+  --wash: #14201d;
+  --tint: #19261f;
+  --paper: #0f1917;
+  --surface: #15221f;
+  --white: #1c2b27;
+  --ground: #3b4c42;
+  --grid: #2a3b35;
+  --sky: #17262a;
+  --sun: #e9b84a;
+  --sun-edge: #c9962a;
+  --moon: #d9dde3;
+  --moon-edge: #8793a0;
+  --backdrop: #000000a6;
+  --scrim: #00000099;
+  --shadow-deep: #00000080;
+  --shadow: #00000040;
+  --shadow-soft: #00000030;
+  --shadow-black: #000a;
+}
+/* Map pictures are made for a light page; in the dark they are turned down, not replaced. */
+:root[data-theme='dark'] .leaflet-tile-pane {
+  filter: brightness(0.72) contrast(1.05) saturate(0.85);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -168,8 +232,8 @@ input[type='checkbox'] {
   height: 40px;
   width: 40px;
   border-radius: 11px;
-  background: var(--ink);
-  color: var(--green-pale);
+  background: var(--logo-tile);
+  color: var(--logo-mark);
 }
 .brand-icon svg {
   height: 32px;
@@ -194,6 +258,21 @@ input[type='checkbox'] {
   padding: 7px 10px;
   border: 1px solid var(--line-strong);
   border-radius: 4px;
+}
+/* Light or dark: a small button at the end of the header. */
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: -11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--text-strong);
+}
+.theme-toggle:hover {
+  background: var(--tint-grey);
+  color: var(--ink);
 }
 main {
   padding: 0 46px;
@@ -1746,6 +1825,9 @@ footer > button {
   .header-right {
     gap: 13px;
   }
+  .theme-toggle {
+    margin-left: 0;
+  }
   .private {
     font-size: 0;
     gap: 0;
@@ -2653,10 +2735,28 @@ footer > button {
     display: none;
   }
   .header-right {
-    gap: 8px;
+    gap: 6px;
   }
   .header {
     padding: 0 14px;
+  }
+  .brand {
+    gap: 8px;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+  .callsign {
+    padding: 5px 4px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .brand small {
+    letter-spacing: 0.6px;
+  }
+  .theme-toggle {
+    width: 27px;
+    height: 27px;
+    margin-left: 0;
   }
 }
 /* Location dialog: the "Use my location" button and its result line. */
