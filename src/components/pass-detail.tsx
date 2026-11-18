@@ -21,7 +21,14 @@ import { createPassCalendar } from '../lib/calendar';
 import { band, sources, frequencyRange } from '../lib/catalog';
 import { compass, doppler, pointAt, tuningSteps, type Pass, type Station, grid } from '../lib/orbit';
 import { offsetLabel, utcDate, utcTime, type Clock } from '../lib/time';
-import { ANTENNA_METRES, exactSpot, inIceland, terrainView, type Horizon } from '../lib/terrain';
+import {
+  ANTENNA_METRES,
+  exactSpot,
+  inIceland,
+  nearestGround,
+  terrainView,
+  type Horizon,
+} from '../lib/terrain';
 import { countUse } from '../lib/usage';
 
 function ics(pass: Pass, station: Station) {
@@ -231,8 +238,8 @@ export default function PassDetail({
                 Seen from {ANTENNA_METRES} m above the ground at your spot. The ground there is{' '}
                 {Math.round(horizon.groundMetres)} m above sea level, so your station height has been set to{' '}
                 {Math.round(horizon.groundMetres) + ANTENNA_METRES} m. Approximate: good to a few seconds on
-                gentle ground, rougher on steep slopes. It knows nothing of buildings, trees or ground closer
-                than 100 m.
+                gentle ground, rougher on steep slopes, where your spot has to be right to a few metres. It
+                knows nothing of buildings, trees or ground closer than {nearestGround(horizon)} m.
               </small>
             </>
           )}

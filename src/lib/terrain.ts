@@ -8,7 +8,14 @@ export const TERRAIN_BASE = 'https://tf5nn.github.io/terrain/v1/';
 export const ANTENNA_METRES = 2;
 
 /** The terrain's elevation angle, in degrees, on every `stepDegrees` of true bearing from north. */
-export type Horizon = { angles: ArrayLike<number>; stepDegrees: number; groundMetres: number };
+export type Horizon = {
+  angles: ArrayLike<number>;
+  stepDegrees: number;
+  groundMetres: number;
+  nearestMetres?: number; // ground closer than this was left out
+};
+/** How close to the station the ground starts to count: 10 m with the 10 m terrain data, 100 m without. */
+export const nearestGround = (h: Horizon) => h.nearestMetres ?? 100;
 
 type TerrainModule = {
   openTerrain: (base: string) => Promise<{
@@ -41,8 +48,9 @@ export function loadHorizon(station: Station): Promise<Horizon> {
       const terrain = await opened;
       if (!(await terrain.covers(station.lat, station.lon)))
         throw new Error('No terrain data for this spot.');
-      // closeDetail: the ground under the station and the closest 500 m from the 10 m data, which is
-      // sharper on hilltops and slopes than the 40 m layer used further out.
+      // closeDetail: the ground under the station and the closest 500 m from the 10 m data, counted
+      // from 10 m out. Without it the nearest 100 m is left out, and on a hilltop or slope the
+      // hillside beside the station, which is the real horizon there, goes missing.
       return terrain.horizon({
         lat: station.lat,
         lon: station.lon,

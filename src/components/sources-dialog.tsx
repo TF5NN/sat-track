@@ -146,11 +146,11 @@ export default function SourcesDialog({ data, now, result, modalRef, setSourceOp
           fetches terrain files for the ground around your spot from my own site (made from ArcticDEM, Polar
           Geospatial Center) and shades the ground on the sky plot. It works from 2 m above the ground at your
           spot and sets your station height to match. It is approximate: good to a few seconds of pass time on
-          gentle ground, rougher on steep slopes, and it knows nothing of buildings, trees or ground closer
-          than 100 m. With the terrain shown, “Look around” draws that skyline as a view you can turn, with
-          the pass across it and the sun and moon where they will be mid-pass (or are now, during a pass). The
-          sun is placed to a small fraction of a degree and the moon to about a third of a degree; it is a
-          guide for finding your bearings, not a photograph.
+          gentle ground, rougher on steep slopes, where your spot has to be right to a few metres, and it
+          knows nothing of buildings, trees or ground closer than 10 m. With the terrain shown, “Look around”
+          draws that skyline as a view you can turn, with the pass across it and the sun and moon where they
+          will be mid-pass (or are now, during a pass). The sun is placed to a small fraction of a degree and
+          the moon to about a third of a degree; it is a guide for finding your bearings, not a photograph.
         </p>
         <p>
           Visits are counted anonymously with GoatCounter, to see whether the planner is used: page opens by

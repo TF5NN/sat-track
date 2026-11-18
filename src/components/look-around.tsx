@@ -4,7 +4,7 @@ import { useModalFocus } from '../hooks/use-modal-focus';
 import { compass, type Pass, type Station } from '../lib/orbit';
 import { frame, ground, line, project, trackRuns, type Camera } from '../lib/panorama';
 import { moonPosition, sunPosition } from '../lib/sky';
-import { ANTENNA_METRES, type Horizon } from '../lib/terrain';
+import { ANTENNA_METRES, nearestGround, type Horizon } from '../lib/terrain';
 import type { Clock } from '../lib/time';
 
 const WIDTH = 400,
@@ -247,7 +247,7 @@ export default function LookAround({
           Drag to look around. This is the terrain’s skyline from {ANTENNA_METRES} m above the ground at your
           spot, with the pass drawn across it; the dotted part is behind terrain. Sun and moon are shown{' '}
           {live ? 'where they are now' : `where they will be at ${clock.time(pass.peak.time)}, mid-pass`}.
-          Buildings, trees and ground closer than 100 m are not included.
+          Buildings, trees and ground closer than {nearestGround(horizon)} m are not included.
         </p>
       </section>
     </div>
