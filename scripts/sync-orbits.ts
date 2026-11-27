@@ -3,7 +3,13 @@ import { catalog, sources } from '../src/lib/catalog.ts';
 import { parseTLE, type Element } from '../src/lib/orbit.ts';
 import { parseSatnogs, mergeElements, elementText } from '../src/lib/elements.ts';
 import { validOrbit, parseBundle, type OrbitBundle } from '../src/lib/orbital-data.ts';
-import { summarizeReports, parseActivity, ACTIVITY_HOURS, type Activity } from '../src/lib/activity.ts';
+import {
+  summarizeReports,
+  parseActivity,
+  ACTIVITY_HOURS,
+  CREW_ENTRY,
+  type Activity,
+} from '../src/lib/activity.ts';
 import { extraLinks, parseExtras, summarizeTransmitters, type Extras } from '../src/lib/extras.ts';
 
 export const feeds = [
@@ -91,7 +97,7 @@ export async function syncOrbits(
     if (!response.ok) throw Error(`HTTP ${response.status}`);
     activity = summarizeReports(
       await response.json(),
-      [...catalog.flatMap((s) => (s.amsat ? [s.amsat] : [])), ...extraLinks.map((l) => l.amsat)],
+      [...catalog.flatMap((s) => (s.amsat ? [s.amsat] : [])), ...extraLinks.map((l) => l.amsat), CREW_ENTRY],
       ACTIVITY_HOURS,
       now,
     );

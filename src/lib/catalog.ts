@@ -46,6 +46,10 @@ export const sources = {
     'https://www.verotelecom.com/Topics/How-to-Track-Satellites-with-VGC-VR-N76-VR-N7600-A-Complete-SATCOM-Guide-tp30129.html',
 };
 const issEvent = { start: '2026-11-09T17:45:00Z', end: '2026-11-16T08:15:00Z' };
+// UmKA-1 SSTV event with AMSAT India (announced 27 Nov 2026). Outside it, RS40S shows no passes:
+// remove this line once the event has ended.
+const umkaEvent = { start: '2026-11-28T04:40:00Z', end: '2026-11-29T18:45:00Z' };
+const sstvEvents: Record<string, { start: string; end: string }> = { rs40: umkaEvent };
 export const catalog: Satellite[] = [
   {
     id: 'so50',
@@ -360,6 +364,7 @@ export const catalog: Satellite[] = [
     ] as const
   ).map(([id, name, subtitle, norad, down, format]): Satellite => ({
     id,
+    ...(sstvEvents[id] ? { event: sstvEvents[id] } : {}),
     amsat: `${name}_[SSTV]`,
     name,
     subtitle: `${subtitle} · ${format}`,
@@ -389,6 +394,25 @@ export const catalog: Satellite[] = [
     notes:
       'Operator lists a 500 mW cross-band FM repeater. Keep transmissions short to avoid overheating; listen for voice activity and check operator reports before trying.',
     source: 'https://spacepi.space/satellites/lobachevskij/',
+  },
+  {
+    // Not in AMSAT's nasabare.txt yet: orbital elements come from the SatNOGS TLE feed,
+    // which the daily job already downloads in full. NORAD 101101 arrives as Alpha-5 "A1101".
+    // AMSAT's status page already lists it, so reception reports work.
+    id: 'so131-fm',
+    amsat: 'SO-131_[V/u_FM]',
+    name: 'SO-131',
+    subtitle: 'UNNE-1B / HADES-E2 · AMSAT-EA',
+    norad: 101101,
+    access: 'work',
+    mode: 'FM voice',
+    up: 145.925,
+    down: 436.888,
+    tone: 'None',
+    condition: 'FM repeater · check reports',
+    notes:
+      'PocketQube launched 1 Oct 2026, designated SO-131 on 15 Nov 2026. No uplink tone. Keep calls short and listen before calling.',
+    source: 'https://db.satnogs.org/satellite/AZNB-1972-1511-6151-8557',
   },
 ];
 export const uncertain = (s: Satellite) =>

@@ -10,6 +10,7 @@ declare global {
 export type UsageEvent =
   | 'save-pass'
   | 'event-show-passes'
+  | 'crew-show-passes'
   | 'download-tle'
   | 'main-site-from-northbound'
   | 'github-from-northbound'
