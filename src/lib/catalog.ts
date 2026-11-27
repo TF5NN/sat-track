@@ -390,6 +390,25 @@ export const catalog: Satellite[] = [
       'Operator lists a 500 mW cross-band FM repeater. Keep transmissions short to avoid overheating; listen for voice activity and check operator reports before trying.',
     source: 'https://spacepi.space/satellites/lobachevskij/',
   },
+  {
+    // Not in AMSAT's nasabare.txt yet: orbital elements come from the SatNOGS TLE feed,
+    // which the daily job already downloads in full. NORAD 101101 arrives as Alpha-5 "A1101".
+    // AMSAT's status page already lists it, so reception reports work.
+    id: 'so131-fm',
+    amsat: 'SO-131_[V/u_FM]',
+    name: 'SO-131',
+    subtitle: 'UNNE-1B / HADES-E2 · AMSAT-EA',
+    norad: 101101,
+    access: 'work',
+    mode: 'FM voice',
+    up: 145.925,
+    down: 436.888,
+    tone: 'None',
+    condition: 'FM repeater · check reports',
+    notes:
+      'PocketQube launched 1 Oct 2026, designated SO-131 on 15 Nov 2026. No uplink tone. Keep calls short and listen before calling.',
+    source: 'https://db.satnogs.org/satellite/AZNB-1972-1511-6151-8557',
+  },
 ];
 export const uncertain = (s: Satellite) =>
   !!s.uncertain || s.id.startsWith('tevel') || ['po101', 'rs95-fm', 'lilac'].includes(s.id);

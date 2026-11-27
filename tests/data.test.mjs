@@ -141,7 +141,7 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
   const { activityFor, activityText, parseActivity, summarizeReports } =
     await import('../src/lib/activity.ts');
   assert(
-    catalog.every((s) => /^[A-Za-z0-9.-]+_\[[A-Za-z_]+\]$/.test(s.amsat)),
+    catalog.every((s) => /^[A-Za-z0-9.-]+_\[[A-Za-z_/]+\]$/.test(s.amsat)),
     'every service names its AMSAT status entry',
   );
   assert.equal(new Set(catalog.map((s) => s.amsat)).size, catalog.length, 'one AMSAT entry per service');
@@ -160,6 +160,9 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
       row('RS38S_[SSTV]', 'Not Heard', 2),
       row('QO-100_[NB]', 'Heard', 40),
       row('ISS_[FM]', 'Heard', 'many'),
+      row('ISS_[Crew]', 'Heard', 5),
+      row('ISS_[Crew]', 'Crew Active', 1),
+      row('ISS_[Crew]', 'Not Heard', 2),
     ],
   };
   const feed = (status) => async (url) =>
@@ -181,8 +184,9 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
         'RS18S_[SSTV]': { heard: 0, total: 2 },
         'RS40S_[SSTV]': { heard: 6, total: 18 },
         'RS38S_[SSTV]': { heard: 2, total: 4 },
+        'ISS_[Crew]': { heard: 6, total: 8 },
       },
-      'only catalogue services, only valid counts',
+      'only catalogue services and the ISS crew entry, only valid counts; Crew Active counts as heard',
     );
     const activity = parseActivity(saved.activity),
       sat = (id) => catalog.find((s) => s.id === id);
@@ -209,6 +213,14 @@ test('AMSAT reception reports are summarised per catalogue service and never blo
     );
     assert.equal(activityFor(sat('so50'), null, now), null);
     assert.equal(parseActivity({ hours: 168 }), null);
+    const { crewHeard } = await import('../src/lib/activity.ts');
+    assert.deepEqual(crewHeard(activity, now), { heard: 6, days: 7 }, 'crew banner when the crew was heard');
+    assert.equal(crewHeard(activity, now + 4 * 86400000), null, 'no crew banner from an old summary');
+    assert.equal(
+      crewHeard({ ...activity, reports: { 'ISS_[Crew]': { heard: 0, total: 3 } } }, now),
+      null,
+      'no crew banner when nobody heard them',
+    );
     assert.throws(() => summarizeReports({ error: 'x' }, [], 168, now));
     // The next day AMSAT is down: orbits still publish and yesterday's summary is kept.
     await syncOrbits({

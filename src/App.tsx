@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, Satellite as SatelliteIcon } from 'lucide-react';
 import DataStatus from './components/data-status';
-import EventBanner from './components/event-banner';
+import EventBanner, { CrewBanner } from './components/event-banner';
 import FiltersPanel from './components/filters';
 import Guide from './components/guide';
 import Intro from './components/intro';
@@ -217,6 +217,17 @@ export default function Home() {
     () => hiddenEvents(availableCatalog, result.passes, filters.status, now, filters.elevation),
     [availableCatalog, result.passes, filters.status, now, filters.elevation],
   );
+  const issPasses = useMemo(
+    () =>
+      result.passes.filter(
+        (p) =>
+          p.sat.id === 'iss-fm' &&
+          p.los.time > now &&
+          p.peak.el >= filters.elevation &&
+          p.windows.some(([a, b]) => b > Math.max(a, now)),
+      ).length,
+    [result.passes, now, filters.elevation],
+  );
   useEffect(() => {
     setHorizon(null);
     setTerrainError('');
@@ -283,6 +294,17 @@ export default function Home() {
           onShow={(sat) => {
             countUse('event-show-passes');
             setFilters({ ...defaults, status: 'all', elevation: filters.elevation, satellite: sat.id });
+            setTab('passes');
+          }}
+        />
+        <CrewBanner
+          activity={activity}
+          now={now}
+          count={issPasses}
+          hours={hours}
+          onShow={() => {
+            countUse('crew-show-passes');
+            setFilters({ ...defaults, status: 'all', elevation: filters.elevation, satellite: 'iss-fm' });
             setTab('passes');
           }}
         />

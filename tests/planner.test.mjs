@@ -21,7 +21,11 @@ const damaged = elements[0].line1.slice(0, 68) + ((Number(elements[0].line1[68])
 assert.equal(parseTLE(`${damaged}\n${elements[0].line2}`).length, 0, 'checksum rejected');
 const result = predict(elements, catalog, defaultStation, start, 72);
 assert(result.passes.length > 200);
-assert.deepEqual(result.unavailable, [100470], 'no verified JAMX01 TLE yet: hidden rather than guessed');
+assert.deepEqual(
+  result.unavailable,
+  [100470, 101101],
+  'JAMX01 and SO-131 have no TLE in the 10 Nov fixture: hidden rather than guessed',
+);
 for (const p of result.passes) {
   assert(p.aos.time < p.peak.time && p.peak.time < p.los.time);
   assert(Math.abs(p.aos.el) < 0.02 && Math.abs(p.los.el) < 0.02, 'horizon crossing refined');

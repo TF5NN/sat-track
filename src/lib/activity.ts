@@ -35,7 +35,8 @@ export function summarizeReports(
     if (!row || !wanted.has(row.name) || !Number.isInteger(count) || count < 0) continue;
     const entry = (reports[row.name] ??= { heard: 0, total: 0 });
     entry.total += count;
-    if (row.report === 'Heard') entry.heard += count;
+    // "Crew Active" is only offered for ISS_[Crew]: someone heard an astronaut on the air.
+    if (row.report === 'Heard' || row.report === 'Crew Active') entry.heard += count;
   }
   return { hours, fetchedAt: new Date(now).toISOString(), reports };
 }
@@ -93,3 +94,15 @@ export const activityText = (a: ActivityView) =>
   a.total === 0
     ? `No AMSAT reports in ${a.days} days`
     : `${a.total} AMSAT report${a.total === 1 ? '' : 's'} · ${a.percent}% heard · ${a.days} days`;
+
+// AMSAT's status entry for ISS crew members on the air (145.800 MHz voice, not the repeater).
+export const CREW_ENTRY = 'ISS_[Crew]';
+// Crew contacts are not scheduled, so they have no catalogue entry or dated event. The banner
+// appears when anyone has logged the crew on the air within the report window.
+export function crewHeard(activity: Activity | null, now: number): { heard: number; days: number } | null {
+  if (!activity) return null;
+  const age = now - Date.parse(activity.fetchedAt);
+  if (age > 3 * DAY || age < -DAY) return null;
+  const heard = activity.reports[CREW_ENTRY]?.heard ?? 0;
+  return heard > 0 ? { heard, days: Math.round(activity.hours / 24) } : null;
+}

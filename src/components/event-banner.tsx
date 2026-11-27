@@ -1,5 +1,5 @@
-import { CalendarClock } from 'lucide-react';
-import { activityFor, type Activity } from '../lib/activity';
+import { CalendarClock, Radio } from 'lucide-react';
+import { activityFor, crewHeard, type Activity } from '../lib/activity';
 import type { Satellite } from '../lib/catalog';
 import { utcDate, utcTime } from '../lib/time';
 
@@ -38,5 +38,36 @@ export default function EventBanner({ events, hours, now, activity, onShow }: Pr
         );
       })}
     </>
+  );
+}
+
+// The ISS crew are not on a schedule: this says that someone heard them in the last week,
+// with the frequencies to listen and answer on. Shown only when AMSAT reports exist.
+export function CrewBanner({
+  activity,
+  now,
+  count,
+  hours,
+  onShow,
+}: {
+  activity: Activity | null;
+  now: number;
+  count: number;
+  hours: number;
+  onShow: () => void;
+}) {
+  const crew = crewHeard(activity, now);
+  if (!crew) return null;
+  return (
+    <div className="event-banner" role="status">
+      <Radio size={15} />
+      <span>
+        <strong>ISS crew on the air</strong> · heard in {crew.heard} AMSAT report
+        {crew.heard === 1 ? '' : 's'} in the last {crew.days} days. Calls come at random times: listen on
+        145.800 MHz during ISS passes and answer on 145.200 MHz (Europe, Africa) or 144.490 MHz (Americas,
+        Asia-Pacific). {count} ISS pass{count === 1 ? '' : 'es'} from your station in the next {hours} hours.
+      </span>
+      {count > 0 && <button onClick={onShow}>Show passes</button>}
+    </div>
   );
 }
