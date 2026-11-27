@@ -46,6 +46,10 @@ export const sources = {
     'https://www.verotelecom.com/Topics/How-to-Track-Satellites-with-VGC-VR-N76-VR-N7600-A-Complete-SATCOM-Guide-tp30129.html',
 };
 const issEvent = { start: '2026-11-09T17:45:00Z', end: '2026-11-16T08:15:00Z' };
+// UmKA-1 SSTV event with AMSAT India (announced 27 Nov 2026). Outside it, RS40S shows no passes:
+// remove this line once the event has ended.
+const umkaEvent = { start: '2026-11-28T04:40:00Z', end: '2026-11-29T18:45:00Z' };
+const sstvEvents: Record<string, { start: string; end: string }> = { rs40: umkaEvent };
 export const catalog: Satellite[] = [
   {
     id: 'so50',
@@ -360,6 +364,7 @@ export const catalog: Satellite[] = [
     ] as const
   ).map(([id, name, subtitle, norad, down, format]): Satellite => ({
     id,
+    ...(sstvEvents[id] ? { event: sstvEvents[id] } : {}),
     amsat: `${name}_[SSTV]`,
     name,
     subtitle: `${subtitle} · ${format}`,
